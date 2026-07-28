@@ -1,0 +1,3996 @@
+#:import dp kivy.metrics.dp
+#:import Gradient kivy_gradient.Gradient
+#:import CheckBox kivy.uix.checkbox
+#:import DropDown kivy.uix.dropdown
+
+<ProfileSpinnerOption@SpinnerOption>:
+    background_normal: ""
+    background_color: (0, 0, 0, 0)  # Transparent base
+    color: 1, 1, 1, 1
+    font_name: "fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+    height: "40dp"
+
+    canvas.before:
+        Color:
+            rgba: 0.156, 0.156, 0.168, 1  # Dark background
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [10]
+
+
+<AdvancedContent>:
+    orientation: "vertical"
+    spacing: "15dp"
+    padding: "20dp"
+
+    Label:
+        text: "Advanced Settings"
+        font_size: "26sp"
+        font_name:"NotoSans"
+        bold: True
+        color: 1,1,1,1
+        size_hint_y: None
+        height: "40dp"
+        pos_hint:{"center_x":0.6}
+
+    Label:
+        text: "Scheduler"
+        font_size: "20sp"
+        font_name:"NotoSans"
+        bold: True
+        color: .2,.6,1,1
+        size_hint_y: None
+        height: "35dp"
+        pos_hint:{"center_x":0.6}
+
+    BoxLayout:
+        pos_hint:{"center_x":0.6}
+        size_hint:0.6,0.4
+
+
+        Label:
+            text: "Scheduler Status"
+            halign: "center"
+            valign: "middle"
+            text_size: self.size
+
+        Label:
+            id: scheduler_status
+            text: "Running"
+            font_name:"NotoSans"
+            color: 0,1,0,1
+            bold: True
+
+    BoxLayout:
+        pos_hint:{"center_x":0.6}
+        size_hint:0.6,0.1
+
+        Label:
+            text: "Scheduler Interval"
+            font_name:"NotoSans"
+
+        Spinner:
+            id: interval_spinner
+            text: "20 Seconds"
+            values:
+                (
+                "10 Seconds",
+                "20 Seconds",
+                "30 Seconds",
+                "1 Minute"
+                )
+
+    Widget:
+        size_hint_y: None
+        height: "10dp"
+
+    BoxLayout:
+        spacing: "10dp"
+        pos_hint:{"center_x":0.6}
+        size_hint:0.6,0.1
+
+        Button:
+            text: "Start Scheduler"
+            font_name:"NotoSans"
+            background_normal: ""
+            background_color: 0.18,0.65,0.30,1
+
+            on_release:
+                root.start_scheduler()
+
+        Button:
+            text: "Stop Scheduler"
+            font_name:"NotoSans"
+            background_normal: ""
+            background_color: 0.85,0.20,0.20,1
+
+            on_release:
+                root.stop_scheduler()
+
+        Button:
+            text: "Restart Scheduler"
+            font_name:"NotoSans"
+            background_normal: ""
+            background_color: 0.15,0.55,1,1
+
+            on_release:
+                root.restart_scheduler()
+
+    Widget:
+    Button:
+        text:"Save"
+        size_hint:0.2,0.1
+        color:0.2,0.2,1,1
+        pos_hint:{"center_x":0.6}
+        on_press:
+            root.save_adv_settings()
+
+<AboutContent>:
+    orientation: "vertical"
+    spacing: "12dp"
+    padding: "20dp"
+
+    Label:
+        text: "About"
+        font_size: "26sp"
+        font_name:"NotoSans"
+        color: 1,1,1,1
+        size_hint_y: None
+        height: "40dp"
+        pos_hint:{"center_x":0.55}
+
+    BoxLayout:
+        orientation: "vertical"
+        spacing: "8dp"
+        size_hint:0.6,0.4
+        pos_hint:{"center_x":0.55}
+
+        canvas.before:
+            Color:
+                rgba: 1,1,1,.08
+            RoundedRectangle:
+                pos: self.pos
+                size: self.size
+                radius: [12]
+
+        padding: "15dp"
+
+        Label:
+            text: "App Version"
+            font_name:"NotoSans"
+            bold: True
+            color: .3,.7,1,1
+            size_hint_y: None
+            height: "25dp"
+
+        Label:
+            text: "Wisher v1.0.0"
+            font_name:"NotoSans"
+            halign: "center"
+            text_size: self.size
+            size_hint_y: None
+            height: "30dp"
+
+    BoxLayout:
+        orientation: "vertical"
+        spacing: "8dp"
+        size_hint:0.6,0.4
+        pos_hint:{"center_x":0.55}
+
+        canvas.before:
+            Color:
+                rgba: 1,1,1,.08
+            RoundedRectangle:
+                pos: self.pos
+                size: self.size
+                radius: [12]
+
+        padding: "15dp"
+
+        Label:
+            text: "Developer"
+            font_name:"NotoSans"
+            bold: True
+            color: .3,.7,1,1
+            size_hint_y: None
+            height: "25dp"
+
+        Label:
+            text: "Rishabh Jadon"
+            font_name:"NotoSans"
+            halign: "center"
+            text_size: self.size
+            size_hint_y: None
+            height: "30dp"
+
+    Button:
+        text: "Terms & Conditions"
+        font_name:"NotoSans"
+        size_hint:0.6,0.1
+        pos_hint:{"center_x":0.55}
+        background_normal: ""
+        background_color: .20,.20,.20,1
+
+    Button:
+        text: "Privacy Policy"
+        font_name:"NotoSans"
+        size_hint:0.6,0.1
+        pos_hint:{"center_x":0.55}
+        background_normal: ""
+        background_color: .20,.20,.20,1
+
+    Button:
+        text: "Open Source Licenses"
+        font_name:"NotoSans"
+        pos_hint:{"center_x":0.55}
+        size_hint:0.6,0.1
+        background_normal: ""
+        background_color: .20,.20,.20,1
+
+    Button:
+        text: "Rate App"
+        font_name:"NotoSans"
+        pos_hint:{"center_x":0.55}
+        size_hint:0.6,0.1
+        background_normal: ""
+        background_color: 0.15,0.55,1,1
+
+        on_release:
+            root.rate_app()
+
+    Button:
+        text: "Share App"
+        font_name:"NotoSans"
+        pos_hint:{"center_x":0.55}
+        size_hint:0.6,0.1
+        background_normal: ""
+        background_color: .30,.70,.30,1
+
+        on_release:
+            root.share_app()
+
+    Widget:
+
+<GeneralContent>:
+    orientation: "vertical"
+    spacing: "15dp"
+    padding: "20dp"
+
+    Label:
+        text: "General Settings"
+        font_name:"NotoSans"
+        font_size: "24sp"
+        bold: True
+        color: 1,1,1,1
+        size_hint_y: None
+        height: "40dp"
+        pos_hint:{"center_x":0.6}
+
+    # ---------------- Startup ----------------
+
+    Label:
+        text: "Startup"
+        font_name:"NotoSans"
+        font_size: "18sp"
+        color: .2,.6,1,1
+        size_hint_y: None
+        height: "35dp"
+        pos_hint:{"center_x":0.6}
+
+    BoxLayout:
+        size_hint:0.6,0.4
+        pos_hint:{"center_x":0.6}
+
+        Label:
+            text: "Launch app at system startup"
+            font_name:"NotoSans"
+            font_size:"14sp"
+            halign: "center"
+            valign: "middle"
+            text_size: self.size
+
+        Switch:
+            id: startup_switch
+
+    BoxLayout:
+        size_hint:0.6,0.4
+        pos_hint:{"center_x":0.6}
+
+        Label:
+            text: "Minimize to system tray on close"
+            font_name:"NotoSans"
+            font_size:"14sp"
+            halign: "center"
+            valign: "middle"
+            text_size: self.size
+
+        Switch:
+            id: tray_switch
+
+    BoxLayout:
+        size_hint:0.6,0.4
+        pos_hint:{"center_x":0.6}
+
+        Label:
+            text: "Start scheduler automatically"
+            font_name:"NotoSans"
+            halign: "center"
+            valign: "middle"
+            text_size: self.size
+
+        Switch:
+            id: scheduler_switch
+
+
+    Widget:
+        size_hint_y: None
+        height: "10dp"
+
+    # ---------------- Date & Time ----------------
+
+    Label:
+        text: "Date & Time"
+        font_name:"NotoSans"
+        font_size: "18sp"
+        color: .2,.6,1,1
+        size_hint_y: None
+        height: "35dp"
+        pos_hint:{"center_x":0.6}
+
+    BoxLayout:
+        size_hint:0.6,0.4
+        pos_hint:{"center_x":0.6}
+
+        Label:
+            text: "Time Format"
+            font_name:"NotoSans"
+
+        Spinner:
+            id: time_spinner
+            text: "12-Hour"
+            values: ("12-Hour","24-Hour")
+
+    BoxLayout:
+        size_hint:0.6,0.4
+        pos_hint:{"center_x":0.6}
+
+        Label:
+            text: "Date Format"
+            font_name:"NotoSans"
+
+        Spinner:
+            id: date_spinner
+            text: "DD/MM/YYYY"
+            values:
+                ("DD/MM/YYYY",
+                "MM/DD/YYYY",
+                "YYYY/MM/DD")
+
+    BoxLayout:
+        size_hint:0.6,0.4
+        pos_hint:{"center_x":0.6}
+
+        Label:
+            text: "Time Zone"
+            font_name:"NotoSans"
+
+        Spinner:
+            id: timezone_spinner
+            text: "Asia/Kolkata"
+            values:
+                ("Asia/Kolkata",
+                "UTC",
+                "America/New_York",
+                "Europe/London")
+
+    Widget:
+
+    #Button:
+    #    id:save
+    #    text: "Save"
+    #    size_hint_x:None
+    #    size_hint_y: None
+    #    height: "45dp"
+    #    pos_hint:{"center_x":0.6}
+
+    #    on_release:
+    #        root.save_general_settings()
+
+<StorageContent>:
+    orientation: "vertical"
+    spacing: "15dp"
+    padding: "20dp"
+
+
+    Label:
+        text: "Storage"
+        font_size: "24sp"
+        font_name:"NotoSans"
+        bold: True
+        color: 1,1,1,1
+        size_hint_y: None
+        height: "40dp"
+        pos_hint:{"center_x":0.6}
+
+
+    Button:
+        text: "Clear Cache"
+        size_hint:0.3,0.1
+        background_normal: ""
+        background_color: 0.25,0.25,0.25,1
+        pos_hint:{"center_x":0.6}
+        on_release:
+            root.clear_cache()
+
+    Button:
+        text: "Clear History"
+        size_hint:0.3,0.1
+        background_normal: ""
+        background_color: 0.25,0.25,0.25,1
+        pos_hint:{"center_x":0.6}
+        on_release:
+            root.clear_history()
+
+    Button:
+        text: "Delete Failed Wishes"
+        pos_hint:{"center_x":0.6}
+        size_hint:0.3,0.1
+        background_normal: ""
+        background_color: 0.25,0.25,0.25,1
+        on_release:
+            root.delete_failed()
+
+    Button:
+        text: "Delete All Wishes"
+        pos_hint:{"center_x":0.6}
+        size_hint:0.3,0.1
+        background_normal: ""
+        background_color: 0.8,0.15,0.15,1
+        on_release:
+            root.delete_all()
+
+    Widget:
+
+
+
+<NotificationContent>:
+
+    orientation:"vertical"
+    spacing:15
+    padding:20
+
+    Label:
+        text:"Notification Settings"
+        font_name:"NotoSans"
+        font_size:"22sp"
+        size_hint_y:None
+        height:"40dp"
+        pos_hint:{"center_x":0.6}
+
+    BoxLayout:
+        size_hint:0.4,0.1
+        pos_hint:{"center_x":0.6}
+
+        Label:
+            text:"Enable Notifications"
+            font_size:"14sp"
+            font_name:"NotoSans"
+
+
+        Switch:
+            id: notification_switch
+
+    BoxLayout:
+        size_hint:0.4,0.1
+        pos_hint:{"center_x":0.6}
+
+        Label:
+            text:"Notification Sound"
+            font_size:"14sp"
+            font_name:"NotoSans"
+
+        Switch:
+            id: sound_switch
+
+    BoxLayout:
+        size_hint:0.4,0.1
+        pos_hint:{"center_x":0.6}
+
+        Label:
+            text:"Notification Vibration"
+            font_size:"14sp"
+            font_name:"NotoSans"
+
+        Switch:
+            id: vibration_switch
+
+    BoxLayout:
+        size_hint:0.4,0.1
+        pos_hint:{"center_x":0.6}
+
+        Label:
+            text:"Reminder Before Wish"
+            font_size:"14sp"
+            font_name:"NotoSans"
+
+        Spinner:
+            text:"15 minutes"
+            values:
+                ("5 minutes","15 minutes","30 minutes","1 hour")
+
+    Widget:
+
+
+<HistoryCard>:
+
+    size_hint_y:None
+    height:"60dp"
+    spacing:5
+
+    canvas.before:
+        Color:
+            rgba:.15,.15,.15,1
+        RoundedRectangle:
+            pos:self.pos
+            size:self.size
+            radius:[8]
+
+    Label:
+        text:root.name
+
+    Label:
+        text:root.platform
+
+    Label:
+        text:root.contact
+        size_hint_x:None
+        width:"200dp"
+    Label:
+        text:root.subject
+
+    Label:
+        text:root.date
+
+    Label:
+        text:root.time
+
+    Label:
+        text:root.status
+
+
+<PlatformDialogContent@MDBoxLayout>
+    #size_hint:0.9,0.9
+    id:channel_drop
+    orientation:"vertical"
+    #adaptive_height:True
+    spacing:"15dp"
+    padding:"20dp"
+
+
+    BoxLayout:
+        orientation: "vertical"
+        adaptive_height: True
+        size_hint_x: None
+        width: "180dp"
+        pos_hint: {"center_x": .5}
+        spacing: "15dp"
+
+        BoxLayout:
+            adaptive_height:True
+            spacing: "10dp"
+            size_hint_x:1
+
+            CheckBox:
+                id:email_cb
+                color:0,0,0,1
+                #on_active: root.update_platform_text()
+                size_hint: None,None
+                size:"30dp","30dp"
+                #pos_hint:{"center_x":0.5}
+
+            Button:
+                id:email_btn
+                text:"Email"
+                background_normal:""
+                background_down:""
+                background_color:0,0,0,0
+                color:0,0,0,1
+                text_size:self.width,None
+                halign:"center"
+                valign:"middle"
+                on_release:
+                    email_cb.active=not email_cb.active
+
+        BoxLayout:
+            adaptive_height:True
+            spacing: "10dp"
+            size_hint_x:1
+
+            CheckBox:
+                id:sms_cb
+                color:0,0,0,1
+                #on_active:root.update_platform_text()
+                size_hint:None,None
+                size:"30dp","30dp"
+                #pos_hint:{"center_x":0.5}
+
+            Button:
+                id:sms_btn
+                text:"SMS"
+                background_normal:""
+                background_down:""
+                background_color:0,0,0,0
+                color:0,0,0,1
+                text_size:self.size
+                halign:"center"
+                valign:"middle"
+                on_press:
+                    sms_cb.active=not sms_cb.active
+
+        BoxLayout:
+            adaptive_height:True
+            spacing: "10dp"
+            size_hint_x:1
+
+            CheckBox:
+                id:whatsapp_cb
+                color:0,0,0,1
+                #on_active:root.update_platform_text()
+                size_hint:None,None
+                size:"30dp","30dp"
+
+                #pos_hint:{"center_x":0.5}
+
+            Button:
+                id:whatsapp_btn
+                text:"WhatsApp"
+                background_normal:""
+                background_color:0,0,0,0
+                color:0,0,0,1
+                text_size:self.size
+                halign:"center"
+                valign:"middle"
+                size_hint_x:1
+
+                on_press:
+                    whatsapp_cb.active=not whatsapp_cb.active
+
+<GradientLabel@Label>:
+    font_size: 80
+    color:255/255,243/255,239/255
+    opacity: 0
+    canvas.before:
+        Color:
+            rgba:1,1,1,1
+        Rectangle:
+            pos:self.pos
+            size:self.size
+            texture:Gradient.vertical((0.96, 0.76, 0.76, 1),(255/255,243/255,239/255))
+
+
+<HoverButton>:
+    background_normal: ""
+    background_color: 1,1,1,1
+
+
+#<RoundedTextInput@TextInput>:
+#    background_normal: ""
+#    background_active:""
+#
+#    cursor_color: 0,0,0,1
+#    multiline:False
+#    padding: [20,15]
+#    pos_hint:{"center_x":0.5}
+#
+#    canvas.before:
+#        Color:
+#            rgba: 1,1,1,0.15
+#        RoundedRectangle:
+#            pos: self.pos
+#            size: self.size
+#            radius: [20]
+#
+#        Color:
+#            rgba: 1,1,1,0.35
+#        Line:
+#            rounded_rectangle:
+#                (self.x, self.y, self.width, self.height, 20)
+#            width: 1.2
+
+
+<RoundedButton@Button>
+    background_normal: ""
+    background_down: ""
+    background_color: 0,0,0,0
+    #color: 1,1,1,1
+    bold: True
+
+    canvas.before:
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [20,20,20,20]
+            texture:Gradient.horizontal((0.0, 0.42, 1.0, 1.0),(1.0, 0.411, 0.705, 1.0))
+
+<RoundedOutlineButton@Button>:
+    background_normal: ""
+    background_down: ""
+    background_color: 0,0,0,0
+    color: 1,1,1,1
+
+    canvas.before:
+        Color:
+            rgba: 1,1,1,.12
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [20,20,20,20]
+
+        Color:
+            rgba: 1,1,1,.5
+        Line:
+            rounded_rectangle:
+                (self.x, self.y, self.width, self.height, 20)
+            width: 1.2
+
+
+WindowManager:
+    FlashScreen:
+        name:"flash"
+    LoginScreen:
+        name: "login"
+
+    SignUpScreen:
+        name: "signup"
+
+    WelcomeScreen:
+        name: "welcome"
+
+    AddWishScreen:
+        name: "add_wish"
+
+    HomeScreen:
+        name:"home"
+
+    EditProfileScreen:
+        name: "edit_profile"
+
+    PersonalizeScreen:
+        name: "personalize"
+
+    HistoryScreen:
+        name:"history"
+
+    SettingScreen:
+        name:"setting"
+
+    DashboardScreen:
+        name:"dashboard"
+
+    ForgotPasswordScreen:
+        name:"forgot"
+
+<FlashScreen>:
+    FloatLayout:
+        background_normal:""
+        canvas.before:
+            Color:
+                rgba: 0.96, 0.95, 0.93, 1
+            Rectangle:
+                pos:self.pos
+                size:self.size
+
+        # Background (fills entire screen)
+        Image:
+            source:"image/flash_screen_ui_background.png"
+            size_hint:1,1
+            fit_mode:"fill"
+            pos:self.pos
+            size:self.size
+
+
+
+        # Center Logo (never stretches)
+        Image:
+            id: splash_logo
+            source: "image/wisher-logo-login_screen.png"
+            size_hint: None, None
+            # Responsive size
+            size:
+                min(root.width * 0.28, 350), \
+                min(root.height * 0.28, 350)
+            pos_hint:
+                {"center_x": 0.5, "center_y": 0.5}
+
+
+
+        Label:
+            id:splash_label
+            text:"Wisher"
+            font_size:"40sp"
+            font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+            opacity:1
+            pos_hint:{"center_y":0.37}
+            color:0.36, 0.25, 0.20, 1
+
+        ProgressBar:
+            id: loading_bar
+            max: 100
+            value: 0
+            size_hint: .45,None
+            height: 8
+            pos_hint: {"center_x":0.5,"y":0.08}
+
+        Label:
+            id: loading_text
+            text: "Loading..."
+            font_size: "16sp"
+            color: 0.36, 0.25, 0.20, 1
+            pos_hint: {"center_x":0.5,"center_y":0.15}
+
+<LoginScreen>:
+
+    FloatLayout:
+        # 🔵 Background Color
+        id:login
+
+        canvas.before:
+            Rectangle:
+                pos: self.pos
+                size: self.size
+                #source: "image/wisher-app-background_login.jpg"
+
+        Image:
+            id:image
+            source:"image/wisher-app-background_login.jpg"
+            size:1,1
+            fit_mode:"fill"
+            pos:self.pos
+            size:self.size
+
+        BoxLayout:
+            orientation:"horizontal" if self.width>self.height else "vertical"
+            size:self.size
+            spacing:10
+            padding:10
+            background_normal:""
+            background_active:""
+
+
+            #  Login Panel
+            AnchorLayout:
+                anchor_x:"center"
+                anchor_y:"center"
+
+                BoxLayout:
+                    orientation:'vertical'
+                    spacing:20
+                    size_hint:.45,.75
+                    size_hint_x:None
+                    padding:[35,30,35,40]
+                    width:min(root.width*0.4, 500)
+                    height:min(root.height*0.7,550)
+
+                    canvas.before:
+                        Color:
+                            rgba:1,1,1,.15
+
+                        RoundedRectangle:
+                            pos:self.pos
+                            size:self.size
+                            radius:[20]
+                        Color:
+                            rgba: 1,1,1,0.35
+                        Line:
+                            rounded_rectangle:
+                                (self.x, self.y, self.width, self.height, 20)
+                            width: 1.2
+                    Image:
+                        source:"image/wisher-logo-login_screen.png"
+                        size_hint:None,None
+                        size:170,170
+
+                        pos_hint:{"center_x":0.5}
+                    Label:
+                        text: "Wisher"
+                        font_size: "32sp"
+                        padding:[0,0,0,50]
+                        font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                        bold: True
+                        color: 1,1,1,1
+
+
+                    Label:
+                        text: "Never forget special moments"
+                        font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                        font_size: "18sp"
+                        color: 1.0,0.84,0,1.0
+                        padding:[0,0,0,10]
+
+                    BoxLayout:
+                        orientation:'horizontal'
+                        size_hint_y:None
+                        height:dp(50)
+                        padding:[15,5]
+
+
+                        canvas.before:
+                            Color:
+                                rgba:1,1,1,.15
+
+                            RoundedRectangle:
+                                pos:self.pos
+                                size:self.size
+                                radius:[20]
+                            Color:
+                                rgba: 1,1,1,0.35
+                            Line:
+                                rounded_rectangle:
+                                    (self.x, self.y, self.width, self.height, 20)
+                                width: 1.2
+
+                        Image:
+                            source:"image/person_30 white.png"
+                            size_hint:None,None
+                            size:30,30
+                            pos_hint:{"center_y":0.5}
+
+                        TextInput:
+
+                            id:login_email
+                            hint_text:"Email or Phone"
+                            hint_text_color:1,1,1,1
+                            font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                            multiline:False
+                            background_normal:""
+                            background_active:""
+                            background_color:0,0,0,0
+                            foreground_color:0,0,0,1
+                            cursor_color:0,0,0,1
+                            padding:[5,12,0,12]
+
+                    BoxLayout:
+                        orientation:'horizontal'
+                        size_hint_y:None
+                        height:60
+                        padding:[15,5]
+                        canvas.before:
+                            Color:
+                                rgba:1,1,1,.15
+
+                            RoundedRectangle:
+                                pos:self.pos
+                                size:self.size
+                                radius:[20]
+                            Color:
+                                rgba: 1,1,1,0.35
+                            Line:
+                                rounded_rectangle:
+                                    (self.x, self.y, self.width, self.height, 20)
+                                width: 1.2
+
+                        Image:
+                            source:"image/lock_30 white.png"
+                            size_hint:None,None
+                            size:30,30
+
+                            pos_hint:{"center_y":0.5}
+
+                        TextInput:
+                            id:login_password
+                            hint_text:"Password"
+                            hint_text_color:1,1,1,1
+                            password:True
+                            font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                            size_hint_x:.85
+                            multiline:False
+                            background_normal:""
+                            background_active:""
+                            background_color:0,0,0,0   # transparent
+                            foreground_color:0,0,0,1
+                            cursor_color:0,0,0,1
+                            padding:[5,12,0,12]
+
+                         # 👁 RIGHT VISIBILITY ICON
+                        HoverButton:
+                            id: visibility_btn
+                            background_normal:"image/visibility_off_30.png"
+                            background_down:"image/visibility_off_30.png"
+                            size_hint:None,None
+                            size:30,30
+                            pos_hint:{"center_y":.5}
+                            on_press:
+                                root.toggle_password()
+
+
+                    #Login Button
+
+                    HoverButton:
+
+                        text: "Login"
+
+                        font_size: "20sp"
+                        font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                        bold: True
+
+                        size_hint_y: None
+                        height: 60
+
+                        background_normal: ""
+                        background_down: ""
+
+                        background_color: 0, 0, 0, 0
+
+                        color: 1,1,1,1
+
+
+                        canvas.before:
+
+                            #Color:
+                                #rgba: .35,.3,.95,1
+
+                            RoundedRectangle:
+                                pos: self.pos
+                                size: self.size
+
+                                # Large radius = pill shape
+                                radius: [20]
+                                texture:Gradient.horizontal((0.0, 0.42, 1.0, 1.0),(1.0, 0.411, 0.705, 1.0))
+
+                        on_press:root.signin_user()
+
+                    #forgot password
+                    HoverButton:
+                        text: "Forgot Password?"
+                        markup:True
+                        font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                        background_normal: ""
+                        background_color: 0, 0, 0, 0   # transparent
+                        color: 0.2, 0.5, 1, 1              # blue text
+                        size_hint: None, None
+                        size: self.texture_size
+                        pos_hint: {"center_x":0.5,"center_y":0.2}
+                        on_press: app.root.current = "forgot"
+
+                    Label:
+                        text:"──────── Or Continue With ────────"
+                        font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                        color:1,1,1,1
+
+                    BoxLayout:
+                        orientation:"horizontal"
+                        color:1,1,1,1
+                        background_normal:""
+                        spacing:15
+                        halign:"center"
+                        size_hint_y:None
+                        height:55
+                        padding:[55,0]
+
+
+                        canvas.before:
+                            Color:
+                                rgba: 1,1,1,.15
+                            RoundedRectangle:
+                                pos:self.pos
+                                size:self.size
+                                radius:[20]
+                            Color:
+                                rgba: 1,1,1,0.35
+                            Line:
+                                rounded_rectangle:
+                                    (self.x, self.y, self.width, self.height, 20)
+                                width: 1.2
+
+                        Image:
+                            source:"image/google.png"
+                            size_hint_x:None
+                            size_hint_y:None
+                            height:30
+                            width:30
+                            pos_hint:{"center_y":0.5}
+
+
+
+                        HoverButton:
+                            text:"Login with Google"
+                            font_size:"18sp"
+                            font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                            background_normal:""
+                            background_down:""
+                            background_color: 0,0,0,0
+                            bold:True
+                            on_press:
+                                root.start_google_login()
+
+                    BoxLayout:
+                        orientation:'horizontal'
+                        size_hint:None,None
+                        spacing:2
+                        width:self.minimum_width
+                        height:20
+                        pos_hint:{"center_x":0.5}
+                        padding:[110,0,100,0]
+                        Label:
+                            text:"Don't have an account?"
+                            font_size:"16sp"
+                            size_hint_x:None
+                            width:self.texture_size[0]
+                            font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                            #pos_hint:{"center_y":0.9}
+
+                        HoverButton:
+                            text:"Sign Up"
+                            font_size:"12sp"
+                            font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                            background_normal:""
+                            background_color:0,0,0,0
+                            color:.30,.30,.95,1
+                            bold:True
+                            size_hint_x:None
+
+                            #height:50
+                            width:self.texture_size[0] +dp(10)
+
+                            #pos_hint:{"center_y":0.9}
+                            on_press:
+                                app.root.current="signup"
+
+
+
+
+<SignUpScreen>:
+
+    FloatLayout:
+
+        canvas.before:
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+        Image:
+            id:image
+            source:"image/wisher-app-background_login.jpg"
+            size:1,1
+            fit_mode:"fill"
+            pos:self.pos
+            size:self.size
+
+        BoxLayout:
+            orientation: "vertical"
+            size_hint: 0.45, 0.87
+            size_hint_x:None
+            pos_hint: {"center_x":0.5,"center_y":0.5}
+            spacing: 15
+            padding: [35,35,35,25]
+            width:min(root.width*0.4, 500)
+            height:min(root.height*0.7,550)
+
+            canvas.before:
+                Color:
+                    rgba: 1,1,1,0.15
+
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [35]
+
+                Color:
+                    rgba: 1,1,1,0.5
+
+                Line:
+                    rounded_rectangle:
+                        (self.x,self.y,self.width,self.height,35)
+                    width: 1.3
+
+            Widget:
+                size_hint_y: .5
+
+
+            Image:
+                source: "image/person_38.png"
+                size_hint: None,None
+                size: 75,75
+                pos_hint: {"center_x":0.5}
+                canvas.before:
+                    Color:
+                        rgba:1,1,1,0.15
+                    RoundedRectangle:
+                        size:self.size
+                        pos:self.pos
+                        radius:[35]
+
+
+            #Image:
+                #source:"sparkling.png"
+                #size_hint:None,None
+                #size:30,30
+
+            Label:
+                text: "Create Account"
+                markup:True
+                font_size: "32sp"
+                font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                bold: True
+                color: 1,1,1,1
+                size_hint_y: None
+                height: 25
+
+
+            Label:
+                text: "Join Wisher and automate your wishes"
+                font_size: "16sp"
+                font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                color: 1.0,0.84,0,1.0
+                size_hint_y: None
+                height: 30
+
+
+            BoxLayout:
+                orientation:"horizontal"
+                size_hint_y:None
+                height:dp(50)
+                padding:[15,15]
+                pos_hint:{"center_x":0.5}
+
+                canvas.before:
+                    Color:
+                        rgba: 1,1,1,0.15
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [20]
+
+                    Color:
+                        rgba: 1,1,1,0.35
+                    Line:
+                        rounded_rectangle:
+                            (self.x, self.y, self.width, self.height, 20)
+                        width: 1.2
+
+                Image:
+                    source:"image/person_30 white.png"
+                    size_hint:None,None
+                    size:30,30
+
+
+
+                TextInput:
+                    id:signup_name
+                    hint_text: "Full Name"
+                    size_hint_x:.85
+                    size_hint_y:None
+                    height:dp(23)
+                    font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                    hint_text_color:1,1,1,1
+                    multiline: False
+                    background_normal: ""
+                    background_active: ""
+                    background_color: 0,0,0,0
+                    foreground_color: 0,0,0,1
+                    cursor_color: 0,0,0,1
+                    pos_hint:{"center_y":0.5}
+                    padding:[10,2,0,2]
+
+            BoxLayout:
+                orientation:"horizontal"
+                size_hint_y:None
+                height:dp(50)
+                padding:[15,15]
+                pos_hint:{"center_x":0.5}
+
+                canvas.before:
+                    Color:
+                        rgba: 1,1,1,0.15
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [20]
+
+                    Color:
+                        rgba: 1,1,1,0.35
+                    Line:
+                        rounded_rectangle:
+                            (self.x, self.y, self.width, self.height, 20)
+                        width: 1.2
+
+                Image:
+                    source:"image/mail_30.png"
+                    size_hint:None,None
+                    size:30,30
+
+                TextInput:
+                    id:signup_email
+                    hint_text: "Email Address"
+                    size_hint_x:.85
+                    font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                    hint_text_color:1,1,1,1
+                    multiline: False
+                    background_normal: ""
+                    background_active: ""
+                    background_color: 0,0,0,0
+                    foreground_color: 0,0,0,1
+                    cursor_color: 0,0,0,1
+                    padding:[10,2,0,2]
+
+            BoxLayout:
+                orientation:"horizontal"
+                size_hint_y:None
+                height:dp(50)
+                padding:[15,15]
+                pos_hint:{"center_x":0.5}
+
+                canvas.before:
+                    Color:
+                        rgba: 1,1,1,0.15
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [20]
+
+                    Color:
+                        rgba: 1,1,1,0.35
+                    Line:
+                        rounded_rectangle:
+                            (self.x, self.y, self.width, self.height, 20)
+                        width: 1.2
+
+                Image:
+                    source:"image/lock_30 white.png"
+                    size_hint:None,None
+                    size: 30,30
+
+                TextInput:
+                    id:signup_password
+                    hint_text: "Password"
+                    password:True
+                    size_hint_x:.85
+                    font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                    hint_text_color:1,1,1,1
+                    multiline: False
+                    background_normal: ""
+                    background_active: ""
+                    background_color: 0,0,0,0
+                    foreground_color: 0,0,0,1
+                    cursor_color: 0,0,0,1
+                    padding:[10,2,0,2]
+
+                #Right Visibility
+                HoverButton:
+                    id:signup_visibility
+                    background_normal:"image/visibility_off_30.png"
+                    background_down:"image/visibility_off_30.png"
+                    color:1,1,1,1
+                    size_hint:None,None
+                    size:30,30
+                    pos_hint:{"center_y":.5}
+                    on_press:
+                        root.toggle_password()
+
+
+            BoxLayout:
+                orientation:"horizontal"
+                size_hint_y:None
+                height:dp(50)
+                padding:[15,15]
+                pos_hint:{"center_x":0.5}
+
+                canvas.before:
+                    Color:
+                        rgba: 1,1,1,0.15
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [20]
+
+                    Color:
+                        rgba: 1,1,1,0.35
+                    Line:
+                        rounded_rectangle:
+                            (self.x, self.y, self.width, self.height, 20)
+                        width: 1.2
+
+                Image:
+                    source:"image/call_30.png"
+                    size_hint:None,None
+                    size:30,30
+
+                TextInput:
+                    id:signup_phone
+                    hint_text: "Phone"
+                    size_hint_x:.85
+                    font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                    hint_text_color:1,1,1,1
+                    multiline: False
+                    background_normal: ""
+                    background_active: ""
+                    background_color: 0,0,0,0
+                    foreground_color: 0,0,0,1
+                    cursor_color: 0,0,0,1
+                    padding:[10,2,0,2]
+
+            HoverButton:
+                text: "Create Account"
+                size_hint_y: None
+                height: dp(50)
+                bold: True
+                font_size: "20sp"
+                background_normal: ""
+                background_down: ""
+                background_color: 0,0,0,0
+                #color: 1,1,1,1
+                bold: True
+                on_press:
+                    root.signup_user()
+
+                canvas.before:
+                    Color:
+                        rgba:1,1,1,1
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [20,20,20,20]
+                        texture:Gradient.horizontal((0.0, 0.42, 1.0, 1.0),(1.0, 0.411, 0.705, 1.0))
+
+            BoxLayout:
+                size_hint_y: None
+                height: 40
+                spacing: 10
+
+                Widget
+                Label:
+                    text: "OR"
+                    font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                    color: 1,1,1,1
+                    size_hint_x: None
+                    width: 40
+
+                Widget
+
+            BoxLayout:
+                orientation:"horizontal"
+                size_hint_y:None
+                height:60
+                padding:[50,0]
+                spacing:20
+                pos_hint:{"center_x":0.5}
+
+                canvas.before:
+                    Color:
+                        rgba: 1,1,1,.15
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [20]
+
+                    Color:
+                        rgba: 1,1,1,.35
+                    Line:
+                        rounded_rectangle:
+                            (self.x, self.y, self.width, self.height, 20)
+                        width: 1.2
+
+                Image:
+                    source:"image/google.png"
+                    size_hint_y:None
+                    size_hint_x:None
+                    height:30
+                    width:30
+                    pos_hint:{"center_y":0.5}
+
+                HoverButton:
+                    text: "Sign up with Google"
+                    font_size: "18sp"
+                    bold: True
+                    font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                    background_normal: ""
+                    background_down:""
+                    background_active:""
+                    background_color: 0,0,0,0
+                    pos_hint:{"center_y":0.5}
+                    on_press: root.start_google_signup()
+
+            Label:
+                markup: True
+                text: "Already have an account? [color=4d6fff][ref=login]Login[/ref][/color]"
+                font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                color: 1,1,1,1
+                size_hint_y: None
+                height: 30
+
+                on_ref_press:
+                    app.root.current = "login"
+<ForgotPasswordScreen>:
+
+    FloatLayout:
+        canvas.before:
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+        Image:
+            id:image
+            source:"image/wisher-app-background_login.jpg"
+            size:1,1
+            fit_mode:"fill"
+            pos:self.pos
+            size:self.size
+
+        BoxLayout:
+            orientation:"vertical"
+            size_hint:0.48,0.51
+            size_hint_x:None
+            size_hint_y:None
+            pos_hint:{"center_x":0.5,"center_y":0.5}
+            spacing: 15
+            padding: [25,25,25,25]
+            width:min(root.width*0.4, 500)
+            height:min(root.height*0.7,550)
+            canvas.before:
+                Color:
+                    rgba: 1,1,1,0.15
+                RoundedRectangle:
+                    pos:self.pos
+                    size:self.size
+                    radius:[20]
+                Color:
+                    rgba:1,1,1,0.35
+
+                Line:
+                    rounded_rectangle:
+                        (self.x, self.y, self.width, self.height, 20)
+                    width: 1.2
+
+            Label:
+                text: "Reset Password"
+                font_size: "30sp"
+                size_hint_y:None
+                height:50
+
+            BoxLayout:
+                orientation:"horizontal"
+                size_hint_y:None
+                height:60
+                padding:[15,15,15,15]
+                canvas.before:
+                    Color:
+                        rgba: 1,1,1,0.15
+                    RoundedRectangle:
+                        pos:self.pos
+                        size:self.size
+                        radius:[20]
+                    Color:
+                        rgba:1,1,1,0.35
+
+                    Line:
+                        rounded_rectangle:
+                            (self.x, self.y, self.width, self.height, 20)
+                        width: 1.2
+
+                Image:
+                    source:"image/mail_30.png"
+                    size_hint:None,None
+                    size:30,30
+
+
+                TextInput:
+                    id: fp_email
+                    hint_text: "Enter your Email"
+                    hint_text_color: 1,1,1,1
+                    font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                    multiline:False
+                    background_color: 0,0,0,0
+                    foreground_color:0,0,0,1
+                    cursor_color:0,0,0,1
+                    background_normal:""
+                    background_active:""
+                    padding:[10,2,0,2]
+
+                HoverButton:
+                    text:"Send OTP"
+                    color:0,0,1,1
+                    font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                    font_size:"10sp"
+                    size_hint_x:None
+                    width:55
+                    background_normal: ""
+                    background_down: ""
+                    background_color: 0,0,0,0
+                    padding:[0,0,0,0]
+                    on_press:
+                        root.send_otp()
+
+            BoxLayout:
+                orientation:"horizontal"
+                size_hint_y:None
+                height:60
+                spacing:10
+                opacity:0
+                id:otp_input_box
+
+                canvas.before:
+                    Color:
+                        rgba: 1,1,1,0.15
+                    RoundedRectangle:
+                        pos:self.pos
+                        size:self.size
+                        radius:[20]
+                    Color:
+                        rgba:1,1,1,0.35
+
+                    Line:
+                        rounded_rectangle:
+                            (self.x, self.y, self.width, self.height, 20)
+                        width: 1.2
+                TextInput:
+                    id: otp_input
+                    hint_text:"OTP"
+                    hint_text_color:1,1,1,1
+                    font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                    size_hint_y:None
+                    size_hint_x:None
+                    height:50
+                    padding:[10,5,10,5]
+                    background_normal: ""
+                    background_down: ""
+                    background_color: 0,0,0,0
+                    bold: True
+                    disabled:True
+            BoxLayout:
+                orientation:"horizontal"
+                spacing:10
+                size_hint_x:None
+                size_hint_y:None
+                height:40
+                padding:[110,0,0,0]
+                Button:
+                    id:verify_btn
+                    text:"Verify"
+                    color:0,0,1,1
+                    font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                    font_size:"16sp"
+                    size_hint_x:None
+                    size_hint_y:None
+                    height:45
+                    opacity:0
+                    disabled:True
+                    background_normal: ""
+                    background_down: ""
+                    background_color: 0,0,0,0
+                    padding:[0,0,0,0]
+                    on_press:
+                        root.verify_otp()
+                    canvas.before:
+                        Color:
+                            rgba:1,1,1,.15
+                        RoundedRectangle:
+                            pos:self.pos
+                            size:self.size
+                            radius:[20,20,20,20]
+                        Color:
+                            rgba:1,1,1,.35
+                        Line:
+                            rounded_rectangle:
+                                (self.x,self.y,self.width,self.height,20)
+                            width:1.2
+
+                HoverButton:
+                    id: resend_btn
+                    color:0,0,1,1
+                    font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                    font_size:"11sp"
+                    size_hint_x:None
+                    size_hint_y:None
+                    height:45
+                    width:120
+                    background_normal: ""
+                    background_down: ""
+                    background_color: 0,0,0,0
+                    padding:[0,0,0,0]
+                    disabled: True
+                    opacity: 0
+                    on_press:
+                        root.resend_otp()
+
+                    canvas.before:
+                        Color:
+                            rgba:1,1,1,.15
+                        RoundedRectangle:
+                            pos:self.pos
+                            size:self.size
+                            radius:[20,20,20,20]
+                        Color:
+                            rgba:1,1,1,.35
+                        Line:
+                            rounded_rectangle:
+                                (self.x,self.y,self.width,self.height,20)
+                            width:1.2
+
+            BoxLayout:
+                orientation:"horizontal"
+                size_hint_y:None
+                height:60
+                padding:[15,15,15,15]
+                opacity:0
+                disabled:True
+                id: fp_password
+
+                canvas.before:
+                    Color:
+                        rgba: 1,1,1,0.15
+                    RoundedRectangle:
+                        pos:self.pos
+                        size:self.size
+                        radius:[20]
+                    Color:
+                        rgba:1,1,1,0.35
+
+                    Line:
+                        rounded_rectangle:
+                            (self.x, self.y, self.width, self.height, 20)
+                        width: 1.2
+
+                Image:
+                    source:"image/lock_30 white.png"
+                    size_hint:None,None
+                    size:30,30
+
+                TextInput:
+                    id: new_password
+                    hint_text:"New Password"
+                    hint_text_color: 1,1,1,1
+                    font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                    multiline:False
+                    background_color: 0,0,0,0
+                    foreground_color:0,0,0,1
+                    cursor_color:0,0,0,1
+                    background_normal:""
+                    background_active:""
+                    padding:[10,2,0,2]
+
+                # visibility button
+                HoverButton:
+                    id:new_visibility
+                    background_normal:"image/visibility_off_30.png"
+                    background_down:"image/visibility_off_30.png"
+                    color:1,1,1,1
+                    size_hint:None,None
+                    size:30,30
+                    pos_hint:{"center_y":.5}
+                    on_press:
+                        root.toggle_password()
+
+
+            BoxLayout:
+                orientation:"horizontal"
+                size_hint_y:None
+                height:60
+                padding:[110,0]
+                halign:"center"
+                spacing:10
+                opacity:0
+                disabled:True
+                id:fp_reset_btn
+
+
+                canvas.before:
+                    Color:
+                        rgba: 1,1,1,1
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [20]
+                        texture:Gradient.horizontal((0.0, 0.42, 1.0, 1.0),(1.0, 0.411, 0.705, 1.0))
+
+                    Color:
+                        rgba: 1,1,1,.35
+                    Line:
+                        rounded_rectangle:
+                            (self.x, self.y, self.width, self.height, 20)
+                        width: 1.2
+
+                HoverButton:
+                    text: "Reset Password"
+                    bold: True
+                    font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                    background_normal: ""
+                    background_down:""
+                    background_active:""
+                    background_color: 0,0,0,0
+                    on_press: root.reset_password()
+            BoxLayout:
+                orientation:"horizontal"
+                pos_hint:{"center_x":0.5}
+                size_hint_x:None
+                size_hint_y:None
+                width:130
+                height:50
+                canvas.before:
+                    Color:
+                        rgba:1,1,1,.15
+                    RoundedRectangle:
+                        pos:self.pos
+                        size:self.size
+                        radius:[20]
+                    Color:
+                        rgba:1,1,1,.35
+                    Line:
+                        rounded_rectangle:
+                            (self.x,self.y,self.width,self.height,20)
+                        width:1.2
+                HoverButton:
+                    text: "Back to Login"
+                    color:0.30, 0.437, 1.0, 1.0
+                    background_color:0,0,0,0
+                    background_normal:""
+                    background_active:""
+                    on_press: app.root.current = "login"
+
+
+
+<AddWishScreen>:
+
+    FloatLayout:
+
+        # 🌈 Background Gradient Feel
+
+        canvas.before:
+            Rectangle:
+                pos: self.pos
+                size: self.size
+                #texture:Gradient.vertical((0.0, 0.42, 1.0, 1.0),(1.0, 0.411, 0.705, 1.0))
+
+
+        Image:
+            id:image
+            source:"image/wisher-app-background_login.jpg"
+            size:1,1
+            fit_mode:"fill"
+            pos:self.pos
+            size:self.size
+
+        # 🎉 Top Title
+        Label:
+            text: "Schedule a Wish"
+            font_name:"NotoSans"
+            font_size: 34
+            color: 1,1,1,1
+            pos_hint: {"center_x":0.5,"center_y":0.9}
+
+
+        # ✨ Subtitle
+        Label:
+            text: "Make every moment special"
+            font_name:"NotoSans"
+            font_size: 16
+            color: 1.0,0.84,0,1.0
+            pos_hint: {"center_x":0.5,"center_y":0.85}
+
+
+
+
+        # 📦 Main Card
+        BoxLayout:
+            id:wish_content
+            disabled:False
+            orientation: "vertical"
+            size_hint: 0.45, 0.72
+            pos_hint: {"center_x":0.5, "center_y":0.45}
+            spacing: 18
+            padding: 25
+            canvas.before:
+                Color:
+                    rgba: 1,1,1,.15
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [30]
+                Color:
+                    rgba:1,1,1,.35
+                Line:
+                    rounded_rectangle:
+                        (self.x,self.y,self.width,self.height,30)
+                    width:1.2
+
+            BoxLayout:
+                size_hint:0.9,0.1
+                pos_hint:{"center_x":0.5}
+                padding:[30,0,0,0]
+                canvas.before:
+                    Color:
+                        rgba:1,1,1,.15
+                    RoundedRectangle:
+                        pos:self.pos
+                        size:self.size
+                        radius:[10]
+                    Color:
+                        rgba: 1,1,1,.35
+                    Line:
+                        rounded_rectangle:
+                            (self.x,self.y,self.width,self.height,10)
+                        width:1.2
+
+                Button:
+                    id:mode
+                    text:"Select Platform"
+                    color: 1,1,1,1
+                    font_size:"16sp"
+                    font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                    size_hint_x:None
+                    width:"145dp"
+                    background_normal:""
+                    background_color:0,0,0,0
+                    padding:[10,0,0,0]
+                    #pos_hint:{"center_x":0.5}
+                    on_release:
+                        root.open_platform_dialog()
+
+                Image:
+                    source:"image/arrow_down_30.png"
+                    size_hint:None,None
+                    size:30,30
+                    pos_hint:{"center_y":0.5}
+
+
+            BoxLayout:
+                size_hint:0.9,0.1
+                pos_hint:{"center_x":0.5}
+                padding:[10,0,0,0]
+                canvas.before:
+                    Color:
+                        rgba: 1,1,1,0.15
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [20]
+                    Color:
+                        rgba: 1,1,1,0.35
+                    Line:
+                        rounded_rectangle:
+                            (self.x, self.y, self.width, self.height, 20)
+                        width: 1.2
+
+                Image:
+                    source:"image/recipient_user.png"
+                    size_hint:None,None
+                    size:24,24
+                    pos_hint:{"center_y":0.5}
+                    padding:[10,0,0,0]
+
+
+                # 👤 Name
+                TextInput:
+                    id: wish_name
+                    hint_text: "Recipient Name"
+                    hint_text_color: 1,1,1,1
+                    multiline: False
+                    font_size: 16
+                    font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                    background_normal:""
+                    background_active:""
+                    background_color: 0,0,0,0
+                    foreground_color: 0,0,0,1
+                    cursor_color: 0,0,0,1
+                    padding: [15,15]
+                    pos_hint:{"center_x":0.5}
+
+
+
+            BoxLayout:
+                size_hint:0.9,0.1
+                pos_hint:{"center_x":0.5}
+                padding:[10,0,0,0]
+                canvas.before:
+                    Color:
+                        rgba: 1,1,1,0.15
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [20]
+                    Color:
+                        rgba: 1,1,1,0.35
+                    Line:
+                        rounded_rectangle:
+                            (self.x, self.y, self.width, self.height, 20)
+                        width: 1.2
+
+                Image:
+                    source:"image/phone_white.png"
+                    size_hint:None,None
+                    size:24,24
+                    pos_hint:{"center_y":0.5}
+                    padding:[10,0,0,0]
+
+            # 📱 Phone
+                TextInput:
+                    id: wish_phone
+                    hint_text: "Mobile Number"
+                    hint_text_color:1,1,1,1
+                    multiline: False
+                    padding: [15,15]
+                    font_size: 16
+                    font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                    background_normal: ""
+                    background_active: ""
+                    background_color: 0,0,0,0
+                    foreground_color: 0,0,0,1
+                    cursor_color: 0,0,0,1
+                    pos_hint:{"center_x":0.5}
+
+            BoxLayout:
+                size_hint:0.9,0.1
+                pos_hint:{"center_x":0.5}
+                padding:[10,0,0,0]
+                canvas.before:
+                    Color:
+                        rgba: 1,1,1,0.15
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [20]
+                    Color:
+                        rgba: 1,1,1,0.35
+                    Line:
+                        rounded_rectangle:
+                            (self.x, self.y, self.width, self.height, 20)
+                        width: 1.2
+
+                Image:
+                    source:"image/recipient_email.png"
+                    size_hint:None,None
+                    size:24,24
+                    pos_hint:{"center_y":0.5}
+                    padding:[10,0,0,0]
+
+            # ✉️ Recipient Email
+                TextInput:
+                    id: wish_email
+                    hint_text: "Recipient Email"
+                    hint_text_color:1,1,1,1
+                    multiline: False
+                    padding: [15,15]
+                    font_size: 16
+                    font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                    background_normal: ""
+                    background_active: ""
+                    background_color: 0,0,0,0
+                    foreground_color: 0,0,0,1
+                    cursor_color: 0,0,0,1
+                    pos_hint:{"center_x":0.5}
+
+            BoxLayout:
+                size_hint:0.9,0.1
+                pos_hint:{"center_x":0.5}
+                padding:[10,0,0,0]
+                canvas.before:
+                    Color:
+                        rgba: 1,1,1,0.15
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [20]
+                    Color:
+                        rgba: 1,1,1,0.35
+                    Line:
+                        rounded_rectangle:
+                            (self.x, self.y, self.width, self.height, 20)
+                        width: 1.2
+
+                Image:
+                    source:"image/comment.png"
+                    size_hint:None,None
+                    size:24,24
+                    pos_hint:{"center_y":0.5}
+                    padding:[10,0,0,0]
+
+                # 💌 Message
+                TextInput:
+                    id: wish_message
+                    hint_text: "Write your message"
+                    hint_text_color:1,1,1,1
+                    multiline: True
+                    padding: [15,15]
+                    font_size: 16
+                    font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                    background_normal: ""
+                    background_active: ""
+                    background_color: 0,0,0,0
+                    foreground_color: 0,0,0,1
+                    cursor_color: 0,0,0,1
+                    pos_hint:{"center_x":0.5}
+
+            BoxLayout:
+                size_hint:0.9,0.1
+                pos_hint:{"center_x":0.5}
+                padding:[10,0,0,0]
+                canvas.before:
+                    Color:
+                        rgba: 1,1,1,0.15
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [20]
+                    Color:
+                        rgba: 1,1,1,0.35
+                    Line:
+                        rounded_rectangle:
+                            (self.x, self.y, self.width, self.height, 20)
+                        width: 1.2
+
+                Image:
+                    source:"image/books.png"
+                    size_hint:None,None
+                    size:24,24
+                    pos_hint:{"center_y":0.5}
+
+
+                #📃subject
+                TextInput:
+                    id: wish_subject
+                    hint_text: "Subject"
+                    hint_text_color:1,1,1,1
+                    multiline: True
+                    padding: [15,15]
+
+                    font_size: 16
+                    font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                    background_normal: ""
+                    background_active: ""
+                    background_color: 0,0,0,0
+                    foreground_color: 0,0,0,1
+                    cursor_color: 0,0,0,1
+                    pos_hint:{"center_x":0.5}
+
+
+            BoxLayout:
+                size_hint:0.9,0.1
+                padding:[10,0,10,0]
+                pos_hint:{"center_x":0.5}
+
+                canvas.before:
+                    Color:
+                        rgba: 1,1,1,0.15
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [20]
+                    Color:
+                        rgba: 1,1,1,0.35
+                    Line:
+                        rounded_rectangle:
+                            (self.x, self.y, self.width, self.height, 20)
+                        width: 1.2
+
+                # 📅 Date
+                TextInput:
+                    id: wish_date
+                    hint_text: "Date (YYYY-MM-DD)"
+                    hint_text_color:1,1,1,1
+                    multiline: False
+                    padding: [15,15]
+                    font_size: 16
+                    read_only:True
+                    font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                    background_normal: ""
+                    background_active: ""
+                    background_color: 0,0,0,0
+                    foreground_color: 0,0,0,1
+                    cursor_color: 0,0,0,1
+                    pos_hint:{"center_x":0.5}
+
+                Button:
+                    background_normal:"image/calendar.png"
+                    background_down:"image/calendar.png"
+                    size_hint:None,None
+                    size:30,30
+                    pos_hint:{"center_y":0.5}
+                    on_release:
+                        root.date_picker()
+
+
+            BoxLayout:
+                size_hint:0.9,0.1
+                padding:[10,0,10,0]
+                pos_hint:{"center_x":0.5}
+                canvas.before:
+                    Color:
+                        rgba: 1,1,1,0.15
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [20]
+                    Color:
+                        rgba: 1,1,1,0.35
+                    Line:
+                        rounded_rectangle:
+                            (self.x, self.y, self.width, self.height, 20)
+                        width: 1.2
+
+                # ⏰ Time
+                TextInput:
+                    id: wish_time
+                    hint_text: "Select Time"
+                    hint_text_color:1,1,1,1
+                    multiline: False
+                    padding: [15,15]
+                    font_size: 16
+                    read_only:True
+                    font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                    background_normal: ""
+                    background_active: ""
+                    background_color: 0,0,0,0
+                    foreground_color: 0,0,0,1
+                    cursor_color: 0,0,0,1
+                    pos_hint:{"center_x":0.5}
+
+                Button:
+                    background_normal:"image/clock.png"
+                    background_down:"image/clock.png"
+                    size_hint:None,None
+                    background_color:1,1,1,1
+                    size:30,30
+
+                    pos_hint:{"center_y":0.5}
+                    on_release:
+                        root.time_picker()
+
+            # 🚀 Schedule Button
+            HoverButton:
+                text: "Schedule Wish"
+                font_size: 18
+                bold: True
+                background_normal: ""
+                background_color: 0,0,0,0
+                background_active:""
+                background_down:""
+                size_hint:0.7,0.1
+                pos_hint:{"center_x":0.5}
+                canvas.before:
+                    Color:
+                        rgba:1,1,1,1
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [20]
+                        texture:Gradient.horizontal((0.0, 0.42, 1.0, 1.0),(1.0, 0.411, 0.705, 1.0))
+
+                on_press: root.schedule_wish()
+
+
+
+
+        #overlay
+        Button:
+            id:overlay
+            opacity:1
+            size_hint:0,0
+            #disabled:True
+            background_normal:""
+            background_down:""
+            background_color:0,0,0,0
+            on_release:
+                root.close_side_menu()
+            canvas.before:
+                Color:
+                    rgba:0,0,0,self.opacity*0.45
+                Rectangle:
+                    pos:self.pos
+                    size:self.size
+
+        # Side Bar
+        HoverButton:
+            id: menu_btn
+            size_hint:None,None
+            size:30,30
+            background_normal:"image/menu.png"
+            background_down:"image/menu.png"
+            background_color:1,1,1,1
+            pos_hint:{"x":0.01,"center_y":0.9}
+            on_press:
+                root.side_menu()
+
+        BoxLayout:
+            id: side_panel
+            orientation:"vertical"
+            pos_hint:{"center_y":0.45}
+            size_hint:0.26,0.75
+            x:-self.width
+            y:0.5
+            spacing: 18
+            padding: 25
+            disabled:True
+            opacity:0
+
+            canvas.before:
+                Color:
+                    rgba: root.side_panel_color
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [5]
+
+
+            BoxLayout:
+                orientation: "horizontal"
+                size_hint_y: None
+                size_hint_x:None
+                width:"160dp"
+                height: "55dp"
+                padding: "12dp", "8dp"
+                spacing: "10dp"
+                pos_hint:{"center_x":0.5}
+
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, .15
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [12]
+
+                Image:
+                    source: "image/Gmail_Logo.png"      # Gmail icon
+                    size_hint: None, None
+                    size: "28dp", "28dp"
+                    pos_hint: {"center_y": .5}
+
+                HoverButton:
+                    id: gmail_btn
+                    text: "Connect Gmail"
+                    font_size: "15sp"
+                    font_name: "fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                    background_normal: ""
+                    background_down: ""
+                    background_color: 0,0,0,0
+                    color: 1, 1, 1, 1
+
+                    on_release:
+                        root.side_menu()
+                        root.connect_gmail()
+
+            BoxLayout:
+                orientation:"horizontal"
+                size_hint_x:None
+                size_hint_y:None
+                width:"160dp"
+                height:"40dp"
+                padding:[15,0,5,0]
+                pos_hint:{"center_x":0.5}
+                canvas.before:
+                    Color:
+                        rgba:1,1,1,.15
+                    RoundedRectangle:
+                        pos:self.pos
+                        size:self.size
+                        radius:[10]
+
+                    Color:
+                        rgba:1,1,1,1
+                    Line:
+                        rounded_rectangle:
+                            (self.x,self.y,self.width,self.height,10)
+                        width:1
+
+                Image:
+                    source:"image/home.png"
+                    size_hint:None,None
+                    size:30,30
+                    pos_hint:{"x":0.5,"center_y":0.5}
+
+
+                HoverButton:
+                    id:home
+                    text:"Home"
+                    text_size:self.size
+                    halign:"center"
+                    font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                    bold:True
+                    font_size:"20sp"
+                    size_hint_y:None
+                    height:35
+                    pos_hint:{"center_x":0.5,"center_y":0.5}
+                    background_normal:""
+                    background_down:""
+                    background_color:0,0,0,0
+                    on_press:
+                        root.side_menu()
+                        app.root.current="home"
+
+            BoxLayout:
+                orientation:"horizontal"
+                size_hint_x:None
+                size_hint_y:None
+                width:"160dp"
+                height:"40dp"
+                padding:[15,0,5,0]
+                pos_hint:{"center_x":0.5}
+                canvas.before:
+                    Color:
+                        rgba:1,1,1,.15
+                    RoundedRectangle:
+                        pos:self.pos
+                        size:self.size
+                        radius:[10]
+
+                    Color:
+                        rgba:1,1,1,1
+                    Line:
+                        rounded_rectangle:
+                            (self.x,self.y,self.width,self.height,10)
+                        width:1
+
+                Image:
+                    id:add_image
+                    color:0.7, 0.5, 0.9, 1
+                    source:"image/add.png"
+                    size_hint:None,None
+                    size:24,24
+                    pos_hint:{"x":0.5,"center_y":0.5}
+
+
+                HoverButton:
+                    id:add
+                    text:"Add Wish"
+                    text_size:self.size
+                    halign:"center"
+                    font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                    bold:True
+                    font_size:"20sp"
+                    size_hint_y:None
+                    height:35
+                    pos_hint:{"center_x":0.5,"center_y":0.5}
+                    background_normal:""
+                    background_down:""
+                    background_color:0,0,0,0
+                    on_press:
+                        root.side_menu()
+                        app.root.current="add_wish"
+
+            BoxLayout:
+                orientation:"horizontal"
+                size_hint_x:None
+                size_hint_y:None
+                width:"160dp"
+                height:"40dp"
+                padding:[13,0,5,0]
+                pos_hint:{"center_x":0.5}
+                canvas.before:
+                    Color:
+                        rgba:1,1,1,.15
+                    RoundedRectangle:
+                        pos:self.pos
+                        size:self.size
+                        radius:[10]
+
+                    Color:
+                        rgba:1,1,1,1
+                    Line:
+                        rounded_rectangle:
+                            (self.x,self.y,self.width,self.height,10)
+                        width:1
+
+                Image:
+                    source:"image/history-30.png"
+                    size_hint:None,None
+                    size:30,30
+                    pos_hint:{"x":0.5,"center_y":0.5}
+
+
+                HoverButton:
+                    id:history
+                    text:"Wish History"
+                    text_size:self.size
+                    halign:"center"
+                    font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                    bold:True
+                    font_size:"20sp"
+                    size_hint_y:None
+                    height:35
+                    pos_hint:{"center_x":0.5,"center_y":0.5}
+                    background_normal:""
+                    background_down:""
+                    background_color:0,0,0,0
+                    on_press:
+                        root.side_menu()
+                        app.root.current="history"
+
+            BoxLayout:
+                orientation:"horizontal"
+                size_hint_x:None
+                size_hint_y:None
+                width:"160dp"
+                height:"40dp"
+                padding:[15,0,5,0]
+                pos_hint:{"center_x":0.5}
+                canvas.before:
+                    Color:
+                        rgba:1,1,1,.15
+                    RoundedRectangle:
+                        pos:self.pos
+                        size:self.size
+                        radius:[10]
+
+                    Color:
+                        rgba:1,1,1,1
+                    Line:
+                        rounded_rectangle:
+                            (self.x,self.y,self.width,self.height,10)
+                        width:1
+
+                Image:
+                    source:"image/color-wheel-30.png"
+                    size_hint:None,None
+                    size:30,30
+                    pos_hint:{"x":0.5,"center_y":0.5}
+
+
+                HoverButton:
+                    id:personalize
+                    text:"Personalize"
+                    text_size:self.size
+                    halign:"center"
+                    font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                    bold:True
+                    font_size:"20sp"
+                    size_hint_y:None
+                    height:35
+                    pos_hint:{"center_x":0.5,"center_y":0.5}
+                    background_normal:""
+                    background_down:""
+                    background_color:0,0,0,0
+                    on_press:
+                        root.side_menu()
+                        app.root.current="personalize"
+
+            BoxLayout:
+                orientation:"horizontal"
+                size_hint_x:None
+                size_hint_y:None
+                width:"160dp"
+                height:"40dp"
+                padding:[15,0,5,0]
+                pos_hint:{"center_x":0.5}
+                canvas.before:
+                    Color:
+                        rgba:1,1,1,.15
+                    RoundedRectangle:
+                        pos:self.pos
+                        size:self.size
+                        radius:[10]
+
+                    Color:
+                        rgba:1,1,1,1
+                    Line:
+                        rounded_rectangle:
+                            (self.x,self.y,self.width,self.height,10)
+                        width:1
+
+                Image:
+                    source:"image/cogwheel.png"
+                    size_hint:None,None
+                    size:24,24
+                    pos_hint:{"center_x":0.5,"center_y":0.5}
+
+
+                HoverButton:
+                    id:setting
+                    text:"Settings"
+                    text_size:self.size
+                    halign:"center"
+                    font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                    bold:True
+                    font_size:"20sp"
+                    size_hint_y:None
+                    height:35
+                    pos_hint:{"center_x":0.5,"center_y":0.5}
+                    background_normal:""
+                    background_down:""
+                    background_color:0,0,0,0
+                    on_press:
+                        root.side_menu()
+                        app.root.current="home"
+
+            Widget:
+                # 🔙 Back Button
+            BoxLayout:
+                orientation:"horizontal"
+                size_hint_x:None
+                size_hint_y:None
+                width:"160dp"
+                height:"40dp"
+                padding:[15,0,5,0]
+                pos_hint:{"center_x":0.5}
+                canvas.before:
+                    Color:
+                        rgba:1,1,1,.15
+                    RoundedRectangle:
+                        pos:self.pos
+                        size:self.size
+                        radius:[10]
+
+                    Color:
+                        rgba:1,1,1,1
+                    Line:
+                        rounded_rectangle:
+                            (self.x,self.y,self.width,self.height,10)
+                        width:1
+                Image:
+                    source:"image/logout.png"
+                    size_hint:None,None
+                    size:30,30
+                    pos_hint:{"center_x":0.5,"center_y":0.5}
+
+
+                HoverButton:
+                    id:logout
+                    text: "Logout"
+                    text_size:self.size
+                    halign:"center"
+                    font_size:"20sp"
+                    font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                    size_hint_y:None
+                    height:35
+                    background_normal:""
+                    background_down:""
+                    background_color:0,0,0,0
+                    pos_hint: {"center_x":0.5,"center_y":0.5}
+                    on_press:
+                        root.side_menu()
+                        app.root.current = "login"
+
+            Widget:
+
+<WelcomeScreen>:
+
+    FloatLayout:
+
+        canvas.before:
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+        Image:
+            id:image
+            source:"image/welcome_screen_bg_image.jpg"
+            fit_mode:"fill"
+            size:self.size
+            pos:self.pos
+            size:1,1
+
+        GradientLabel:
+            id: welcome_label
+            text: "Welcome to Wisher"
+            size_hint:0.8,0.1
+            pos_hint: {"center_x":0.5, "center_y":0.6}
+
+<HomeScreen>:
+
+    FloatLayout:
+        size:self.size
+        pos:self.pos
+        canvas.before:
+            Rectangle:
+                pos:self.pos
+                size:self.size
+
+        Image:
+            id:image
+            source:"image/wisher-app-background_login.jpg"
+            size:self.size
+            pos:self.pos
+            size:1,1
+            fit_mode:"fill"
+
+        FloatLayout:
+
+            Label:
+                id: home_label
+                font_size:"30sp"
+                pos_hint:{"center_y":0.85}
+
+
+
+            Label:
+                id:tagline
+                text:"Never miss a special moment"
+                font_size:"20sp"
+                color:1, 0.84, 0, 1
+                pos_hint:{"center_y":.80}
+                size_hint_y:None
+                height:self.texture_size[1] +dp(20)
+                canvas.before:
+                    Color:
+                        rgba:1,1,1,1
+                    Line:
+                        points:[self.x,self.y,self.x+self.width,self.y]
+                        width:1
+
+            BoxLayout:
+                orientation:"horizontal"
+                size_hint:0.5,0.1
+                pos_hint:{"center_x":0.5,"center_y":0.6}
+                padding:[10,0,0,0]
+
+                canvas.before:
+                    Color:
+                        rgba:1,1,1,.15
+                    RoundedRectangle:
+                        pos:self.pos
+                        size:self.size
+                        radius:[10]
+                    Color:
+                        rgba:1,1,1,1
+                    Line:
+                        rounded_rectangle:
+                            (self.x,self.y,self.width,self.height,10)
+                        width:1.2
+                Image:
+                    source:"image/email.png"
+                    size_hint:None,None
+                    size:30,30
+                    pos_hint:{"center_y":0.75}
+
+
+                BoxLayout:
+                    orientation:"vertical"
+                    spacing:2
+                    Label:
+                        id:total
+                        text:"Total Wishes"
+                        font_size:"16sp"
+                        color:0,0,0,1
+                        text_size:self.size
+                        halign:"left"
+                        valign:"top"
+                        padding:[10,10,0,0]
+
+                    Label:
+                        id:wish_number
+                        font_size:"14sp"
+                        text:"0"
+                        color:0,0,0,1
+                        text_size:self.size
+                        halign:"left"
+                        valign:"middle"
+                        padding:[30,10,0,20]
+
+            BoxLayout:
+                orientation:"horizontal"
+                size_hint:0.5,0.1
+                pos_hint:{"center_x":0.5,"center_y":0.45}
+                padding:[10,0,0,0]
+
+                canvas.before:
+                    Color:
+                        rgba:1,1,1,.15
+                    RoundedRectangle:
+                        pos:self.pos
+                        size:self.size
+                        radius:[10]
+                    Color:
+                        rgba:1,1,1,1
+                    Line:
+                        rounded_rectangle:
+                            (self.x,self.y,self.width,self.height,10)
+                        width:1.2
+
+                Image:
+                    source:"image/hourglass.png"
+                    size_hint:None,None
+                    size:30,30
+                    pos_hint:{"center_y":0.75}
+
+                BoxLayout:
+                    orientation:"vertical"
+                    spacing:2
+                    Label:
+                        id:pending
+                        text:"Pending"
+                        font_size:"16sp"
+                        color:0,0,0,1
+                        text_size:self.size
+                        halign:"left"
+                        valign:"top"
+                        padding:[10,10,0,0]
+
+                    Label:
+                        id:pending_number
+                        font_size:"14sp"
+                        text:"0"
+                        color:0,0,0,1
+                        text_size:self.size
+                        halign:"left"
+                        valign:"middle"
+                        padding:[30,10,0,20]
+
+            BoxLayout:
+                orientation:"horizontal"
+                size_hint:0.5,0.1
+                pos_hint:{"center_x":0.5,"center_y":0.30}
+                padding:[10,0,0,0]
+
+                canvas.before:
+                    Color:
+                        rgba:1,1,1,.15
+                    RoundedRectangle:
+                        pos:self.pos
+                        size:self.size
+                        radius:[10]
+                    Color:
+                        rgba:1,1,1,1
+                    Line:
+                        rounded_rectangle:
+                            (self.x,self.y,self.width,self.height,10)
+                        width:1.2
+
+                Image:
+                    source:"image/check.png"
+                    size_hint:None,None
+                    size:30,30
+                    pos_hint:{"center_y":0.75}
+
+                BoxLayout:
+                    orientation:"vertical"
+                    spacing:2
+                    Label:
+                        id:sent
+                        text:"Sent"
+                        font_size:"16sp"
+                        color:0,0,0,1
+                        text_size:self.size
+                        halign:"left"
+                        valign:"top"
+                        padding:[20,10,0,0]
+
+                    Label:
+                        id:sent_number
+                        font_size:"14sp"
+                        text:"0"
+                        color:0,0,0,1
+                        text_size:self.size
+                        halign:"left"
+                        valign:"middle"
+                        padding:[30,10,0,20]
+            BoxLayout:
+                orientation:"horizontal"
+                size_hint:0.5,0.1
+                pos_hint:{"center_x":0.5,"center_y":0.15}
+                padding:[10,0,0,0]
+                canvas.before:
+                    Color:
+                        rgba:1,1,1,.15
+                    RoundedRectangle:
+                        pos:self.pos
+                        size:self.size
+                        radius:[10]
+                    Color:
+                        rgba:1,1,1,1
+                    Line:
+                        rounded_rectangle:
+                            (self.x,self.y,self.width,self.height,10)
+                        width:1.2
+
+                Image:
+                    source:"image/close_30.png"
+                    size_hint:None,None
+                    size:30,30
+                    pos_hint:{"center_y":0.75}
+
+
+                BoxLayout:
+                    orientation:"vertical"
+                    spacing:2
+                    Label:
+                        id:failed
+                        text:"Failed"
+                        font_size:"16sp"
+                        color:0,0,0,1
+                        text_size:self.size
+                        halign:"left"
+                        valign:"top"
+                        padding:[10,10,0,0]
+
+                    Label:
+                        id:failed_number
+                        font_size:"14sp"
+                        text:"0"
+                        color:0,0,0,1
+                        text_size:self.size
+                        halign:"left"
+                        valign:"middle"
+                        padding:[30,10,0,20]
+
+        Button:
+            id:overlay
+            opacity:0
+            size_hint:1,1
+            disabled:True
+            background_color:0,0,0,0
+            on_release:
+                root.side_menu()
+            canvas.before:
+                Color:
+                    rgba:0,0,0,self.opacity*0.45
+                Rectangle:
+                    pos:self.pos
+                    size:self.size
+
+        # Side Bar
+        HoverButton:
+            id: menu_btn
+            size_hint:None,None
+            size:30,30
+            background_normal:"image/menu.png"
+            background_down:"image/menu.png"
+            background_color: 1,1,1,1
+            pos_hint:{"x":0.03,"center_y":0.92}
+            on_press:
+                root.side_menu()
+
+        BoxLayout:
+            id:box
+            orientation:"horizontal"
+            size_hint:None,None
+            size:"105dp","40dp"
+            padding:[15,0,15,0]
+            pos_hint:{"center_x":0.91,"center_y":0.92}
+
+            canvas.before:
+                Color:
+                    rgba:0,0,0,0
+                RoundedRectangle:
+                    pos:self.pos
+                    size:self.size
+                    radius:[15]
+                Color:
+                    rgba:1,1,1,1
+                Line:
+                    rounded_rectangle:
+                        (self.x,self.y,self.width,self.height,15)
+                    width:1.2
+            Image:
+                source:"image/user.png"
+                color:1, 1, 1, 1
+                size_hint:None,None
+                size:24,24
+                pos_hint:{"center_x":0.5,"center_y":0.5}
+
+
+
+            Spinner:
+                id:profile
+                text:""
+                text_size:self.size
+                halign:"left"
+                valign:"middle"
+                values:["Edit Profile"]
+                color:1,1,1,1
+                font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                font_size:"16sp"
+                size_hint:None,None
+                size:80,40
+                background_normal:""
+                background_color:(0.2, 0.5, 1, 1) if self.state == "down" else (0,0,0,0)
+                padding:[0,0,0,1]
+                pos_hint:{"center_y":0.5}
+                width:box.width
+
+                dropdown_cls:'DropDown'
+                option_cls:'ProfileSpinnerOption'
+                #dropdown_properties:{"auto_width":False,width:box.width}
+
+                # Triggers when a user picks an option
+                on_text: root.on_spinner_select(self.text)
+
+        DropDown:
+            auto_width:False
+            width:box.width
+
+        BoxLayout:
+            id: side_panel
+            orientation:"vertical"
+            pos_hint:{"center_y":0.45}
+            size_hint:0.26,0.7
+            x:-self.width
+            y:0.5
+            spacing: 18
+            padding: 25
+            disabled:True
+            opacity:0
+
+            canvas.before:
+                Color:
+                    rgba: root.side_panel_color
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [5]
+
+                #Line:
+                #    rounded_rectangle:
+                #        (self.x,self.y,self.width,self.height,5)
+                #    width:1.2
+
+            BoxLayout:
+                orientation:"horizontal"
+                size_hint_x:None
+                size_hint_y:None
+                width:"160dp"
+                height:"40dp"
+                pos_hint:{"center_x":0.5}
+                padding:[15,0,5,0]
+                canvas.before:
+                    Color:
+                        rgba:1,1,1,.15
+                    RoundedRectangle:
+                        pos:self.pos
+                        size:self.size
+                        radius:[10]
+
+                    Color:
+                        rgba:1,1,1,1
+                    Line:
+                        rounded_rectangle:
+                            (self.x,self.y,self.width,self.height,10)
+                        width:1
+
+                Image:
+                    source:"image/home.png"
+                    size_hint:None,None
+                    size:30,30
+                    pos_hint:{"center_x":0.5,"center_y":0.5}
+
+
+
+                HoverButton:
+                    id:home
+                    text:app.language.translate("Home")
+                    text_size:self.size
+                    halign:"center"
+                    font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                    bold:True
+                    font_size:"20sp"
+                    size_hint_y:None
+                    height:35
+                    pos_hint:{"center_x":0.5,"center_y":0.5}
+                    background_normal:""
+                    background_down:""
+                    background_color:0,0,0,0
+                    on_press:
+                        root.side_menu()
+                        app.root.current="home"
+
+            BoxLayout:
+                orientation:"horizontal"
+                size_hint_x:None
+                size_hint_y:None
+                width:"160dp"
+                height:"40dp"
+                padding:[15,0,5,0]
+                pos_hint:{"center_x":0.5}
+                canvas.before:
+                    Color:
+                        rgba:1,1,1,.15
+                    RoundedRectangle:
+                        pos:self.pos
+                        size:self.size
+                        radius:[10]
+
+                    Color:
+                        rgba:1,1,1,1
+                    Line:
+                        rounded_rectangle:
+                            (self.x,self.y,self.width,self.height,10)
+                        width:1
+
+                Image:
+                    id:add_image
+                    source:"image/add.png"
+                    color:0.7, 0.5, 0.9, 1
+                    size_hint:None,None
+                    size:24,24
+                    pos_hint:{"center_x":0.5,"center_y":0.5}
+
+                HoverButton:
+                    id: add
+                    text:app.language.translate("Add Wish")
+                    font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                    bold:True
+                    font_size:"20sp"
+                    size_hint_y:None
+                    height:35
+                    pos_hint:{"center_x":0.5,"center_y":0.5}
+                    background_normal:""
+                    background_down:""
+                    background_color:0,0,0,0
+                    on_press:
+                        root.side_menu()
+                        app.root.current="add_wish"
+            BoxLayout:
+                orientation:"horizontal"
+                size_hint_x:None
+                size_hint_y:None
+                width:"160dp"
+                height:"40dp"
+                padding:[13,0,5,0]
+                pos_hint:{"center_x":0.5}
+                canvas.before:
+                    Color:
+                        rgba:1,1,1,.15
+                    RoundedRectangle:
+                        pos:self.pos
+                        size:self.size
+                        radius:[10]
+
+                    Color:
+                        rgba:1,1,1,1
+                    Line:
+                        rounded_rectangle:
+                            (self.x,self.y,self.width,self.height,10)
+                        width:1
+
+                Image:
+                    source:"image/history-30.png"
+                    size_hint:None,None
+                    size:30,30
+                    pos_hint:{"center_y":0.5}
+
+                HoverButton:
+                    id: history
+                    text:app.language.translate("Wish History")
+                    font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                    bold:True
+                    font_size:"20sp"
+                    size_hint_y:None
+                    height:35
+                    pos_hint:{"center_x":0.5,"center_y":0.5}
+                    background_normal:""
+                    background_down:""
+                    background_color:0,0,0,0
+                    on_press:
+                        root.side_menu()
+                        app.root.current="history"
+            BoxLayout:
+                orientation:"horizontal"
+                size_hint_x:None
+                size_hint_y:None
+                width:"160dp"
+                height:"40dp"
+                padding:[15,0,5,0]
+                pos_hint:{"center_x":0.5}
+                canvas.before:
+                    Color:
+                        rgba:1,1,1,.15
+                    RoundedRectangle:
+                        pos:self.pos
+                        size:self.size
+                        radius:[10]
+
+                    Color:
+                        rgba:1,1,1,1
+                    Line:
+                        rounded_rectangle:
+                            (self.x,self.y,self.width,self.height,10)
+                        width:1
+
+                Image:
+                    source:"image/color-wheel-30.png"
+                    size_hint:None,None
+                    size:30,30
+                    pos_hint:{"center_y":0.5}
+
+                HoverButton:
+                    id: personalize
+                    text:"Personalize"
+                    font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                    bold:True
+                    font_size:"20sp"
+                    size_hint_y:None
+                    height:35
+                    pos_hint:{"center_x":0.5,"center_y":0.5}
+                    background_normal:""
+                    background_down:""
+                    background_color:0,0,0,0
+                    on_press:
+                        root.side_menu()
+                        app.root.current="personalize"
+
+            BoxLayout:
+                orientation:"horizontal"
+                size_hint_x:None
+                size_hint_y:None
+                width:"160dp"
+                height:"40dp"
+                padding:[15,0,5,0]
+                pos_hint:{"center_x":0.5}
+                canvas.before:
+                    Color:
+                        rgba:1,1,1,.15
+                    RoundedRectangle:
+                        pos:self.pos
+                        size:self.size
+                        radius:[10]
+
+                    Color:
+                        rgba:1,1,1,1
+                    Line:
+                        rounded_rectangle:
+                            (self.x,self.y,self.width,self.height,10)
+                        width:1
+
+                Image:
+                    source:"image/cogwheel.png"
+                    size_hint:None,None
+                    size:24,24
+                    pos_hint:{"center_y":0.5}
+
+                HoverButton:
+                    id: setting
+                    text:"Settings"
+                    font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                    bold:True
+                    font_size:"20sp"
+                    size_hint_y:None
+                    height:35
+                    pos_hint:{"center_x":0.5,"center_y":0.5}
+                    background_normal:""
+                    background_down:""
+                    background_color:0,0,0,0
+                    on_press:
+                        root.side_menu()
+                        app.root.current="setting"
+
+
+            Widget:
+                # 🔙 Back Button
+            BoxLayout:
+                orientation:"horizontal"
+                size_hint_x:None
+                size_hint_y:None
+                width:"160dp"
+                height:"40dp"
+                padding:[15,0,5,0]
+                pos_hint:{"center_x":0.5}
+                canvas.before:
+                    Color:
+                        rgba:1,1,1,.15
+                    RoundedRectangle:
+                        pos:self.pos
+                        size:self.size
+                        radius:[10]
+
+                    Color:
+                        rgba:1,1,1,1
+                    Line:
+                        rounded_rectangle:
+                            (self.x,self.y,self.width,self.height,10)
+                        width:1
+                Image:
+                    source:"image/logout.png"
+                    size_hint:None,None
+                    size:30,30
+                    pos_hint:{"center_x":0.5,"center_y":0.5}
+
+
+                HoverButton:
+                    id:logout
+                    text: "Logout"
+                    font_size:"20sp"
+                    font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                    size_hint_y:None
+                    height:35
+                    background_normal:""
+                    background_down:""
+                    background_color:0,0,0,0
+                    pos_hint: {"center_x":0.5,"center_y":0.5}
+                    on_press:
+                        root.side_menu()
+                        app.root.current = "login"
+
+            Widget:
+
+
+<EditProfileScreen>:
+
+    FloatLayout:
+
+        canvas.before:
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+
+        Image:
+            id:image
+            source:"image/wisher-app-background_login.jpg"
+            size:1,1
+            fit_mode:"fill"
+            pos:self.pos
+            size:self.size
+
+        Button:
+            background_normal:"image/arrow_back.png"
+            background_down:""
+            background_color: (0.27, 0.51, 0.71, 1) if self.state == "down" else (1,1,1,1)
+            size_hint:None,None
+            size:40,40
+            pos_hint:{"center_x":0.06,"center_y":0.92}
+            on_press:
+                app.root.current="home"
+
+        BoxLayout:
+            orientation: "vertical"
+            size_hint: None, .82
+            width:"350dp"
+            pos_hint: {"center_x":.5,"center_y":.5}
+            spacing: "18dp"
+            padding: "25dp"
+
+            canvas.before:
+                Color:
+                    rgba: 1,1,1,.15
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [20]
+                Color:
+                    rgba:1,1,1,.35
+                Line:
+                    rounded_rectangle:
+                        (self.x,self.y,self.width,self.height,20)
+                    width:1.2
+
+            Label:
+                text: "Edit Profile"
+                bold: True
+                font_size: "28sp"
+                color: 1,1,1,1
+                size_hint_y: None
+                height: "45dp"
+
+            AnchorLayout:
+                anchor_x: "center"
+                anchor_y: "center"
+                size_hint_y: None
+                height: "120dp"
+
+                BoxLayout:
+                    orientation: "vertical"
+                    size_hint: None,None
+                    size: "120dp","120dp"
+
+                    Image:
+                        id: profile_image
+                        source: "image/edit-info.png"
+
+
+            Label:
+
+                text: "Full Name"
+                color: 1,1,1,1
+                halign: "left"
+                text_size: self.size
+
+            TextInput:
+                id: full_name
+                multiline: False
+                hint_text: "Enter your full name"
+                size_hint_y: None
+                height: "45dp"
+                background_normal:""
+                background_color:0,0,0,0
+                foreground_color:0,0,0,1
+                cursor_color:0,0,0,1
+                padding:[10,15,0,15]
+
+                canvas.after:
+                    Color:
+                        rgba:1,1,1,.15
+                    RoundedRectangle:
+                        pos:self.pos
+                        size:self.size
+                        radius:[10]
+                    Color:
+                        rgba:1,1,1,1
+                    Line:
+                        rounded_rectangle:
+                            (self.x,self.y,self.width,self.height,10)
+                        width:1.2
+
+            Label:
+                text: "Email"
+                color: 1,1,1,1
+                halign: "left"
+                text_size: self.size
+
+            TextInput:
+                id: email
+                multiline: False
+                hint_text: "Enter your email"
+                size_hint_y: None
+                height: "45dp"
+                background_normal:""
+                background_color:0,0,0,0
+                foreground_color:0,0,0,1
+                cursor_color:0,0,0,1
+                padding:[10,15,0,15]
+
+                canvas.after:
+                    Color:
+                        rgba:1,1,1,.15
+                    RoundedRectangle:
+                        pos:self.pos
+                        size:self.size
+                        radius:[10]
+                    Color:
+                        rgba:1,1,1,1
+                    Line:
+                        rounded_rectangle:
+                            (self.x,self.y,self.width,self.height,10)
+                        width:1.2
+
+            Label:
+                text: "Phone Number"
+                color: 1,1,1,1
+                halign: "left"
+                text_size: self.size
+
+            TextInput:
+                id: phone
+                multiline: False
+                input_filter: "int"
+                hint_text: "Enter phone number"
+                size_hint_y: None
+                height: "45dp"
+                background_normal:""
+                background_color:0,0,0,0
+                foreground_color:0,0,0,1
+                cursor_color:0,0,0,1
+                padding:[10,15,0,15]
+
+                canvas.after:
+                    Color:
+                        rgba:1,1,1,.15
+                    RoundedRectangle:
+                        pos:self.pos
+                        size:self.size
+                        radius:[10]
+                    Color:
+                        rgba:1,1,1,1
+                    Line:
+                        rounded_rectangle:
+                            (self.x,self.y,self.width,self.height,10)
+                        width:1.2
+
+            BoxLayout:
+                size_hint_y: None
+                height: "50dp"
+                spacing: "15dp"
+
+                Button:
+                    text: "Cancel"
+                    background_normal: ""
+                    background_color: .75,.2,.2,1
+                    on_release:
+                        app.root.current = "home"
+
+                Button:
+                    text: "Save Changes"
+                    background_normal: ""
+                    background_color: .1,.6,1,1
+                    on_release:
+                        root.update_profile()
+                    canvas.after:
+                        Color:
+                            rgba:1,1,1,.15
+                        RoundedRectangle:
+                            pos:self.pos
+                            size:self.size
+                            radius:[10]
+
+<PersonalizeScreen>:
+
+    FloatLayout:
+
+        canvas.before:
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+
+        Image:
+            id:image
+            source:"image/wisher-app-background_login.jpg"
+            size:1,1
+            fit_mode:"fill"
+            pos:self.pos
+            size:self.size
+
+        Button:
+            background_normal:"image/arrow_back.png"
+            background_down:"image/arrow_back.png"
+            size_hint:None,None
+            size:40,40
+            pos_hint:{"center_y":0.92,"center_x":0.06}
+            on_press:
+                app.root.current="home"
+
+
+        BoxLayout:
+            orientation: "vertical"
+            size_hint: 0.65, 0.85
+            pos_hint: {"center_x":0.5,"center_y":0.5}
+            spacing: 20
+            padding: 20
+
+            canvas.before:
+                Color:
+                    rgba: 1,1,1,.15
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [20]
+                Color:
+                    rgba:1,1,1,.35
+                Line:
+                    rounded_rectangle:
+                        (self.x,self.y,self.width,self.height,20)
+                    width:1.2
+
+            Label:
+                id:personalize
+                text: "Personalize"
+                font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                font_size: "28sp"
+                bold: True
+                color: 1,1,1,1
+                size_hint_y: None
+                height: "45dp"
+
+            ################################################
+
+            Label:
+                id:theme
+                text: "Theme"
+                font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                color: 1,1,1,1
+                font_size: "18sp"
+                text_size: self.size
+                halign: "left"
+
+            Spinner:
+                id: theme_spinner
+                text: "Light"
+                values: ("Dark","Light")
+                size_hint_y: None
+                height: "45dp"
+
+            ################################################
+
+            Label:
+                id:language
+                text: "Language"
+                color: 1,1,1,1
+                font_size: "18sp"
+                font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                text_size: self.size
+                halign: "left"
+
+            Spinner:
+                id: language_spinner
+                text: "English"
+                #font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                font_name:"NotoSansDevanagari"
+                values:
+                    ("English",
+                    "Hindi",
+                    "French",
+                    "Spanish")
+
+                size_hint_y: None
+                height: "45dp"
+                #on_text:
+                 #   root.translate()
+
+            ################################################
+
+            Label:
+                id:font_size
+                text: "Font Size"
+                font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                color: 1,1,1,1
+                font_size: "18sp"
+                text_size: self.size
+                halign: "left"
+
+            Slider:
+                id: font_slider
+                min: 12
+                max: 30
+                value: 18
+                step: 1
+
+            Label:
+                id: font_value
+                font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                text: str(int(font_slider.value))
+                color: 1,1,1,1
+                font_size: "16sp"
+
+            ################################################
+
+            Label:
+                id:accent
+                text: "Accent Color"
+                font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                color: 1,1,1,1
+                font_size: "18sp"
+                text_size: self.size
+                halign: "left"
+
+            BoxLayout:
+                size_hint_y: None
+                height: "45dp"
+                spacing: 10
+
+                Button:
+                    background_normal: ""
+                    background_color: 0.15,0.45,1,1
+                    on_release:
+                        root.select_color("Blue")
+
+                Button:
+                    background_normal: ""
+                    background_color: 0.15,0.8,0.3,1
+                    on_release:
+                        root.select_color("Green")
+
+                Button:
+                    background_normal: ""
+                    background_color: 0.75,0.25,1,1
+                    on_release:
+                        root.select_color("Purple")
+
+                Button:
+                    background_normal: ""
+                    background_color: 1,0.2,0.2,1
+                    on_release:
+                        root.select_color("Red")
+
+            Widget:
+
+            ################################################
+
+            BoxLayout:
+                size_hint_y: None
+                height: "50dp"
+                spacing: 20
+
+                Button:
+                    id:restore
+                    text: "Restore Default"
+                    font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                    background_normal: ""
+                    background_color: .7,.2,.2,1
+
+                    on_release:
+                        root.restore_default()
+
+                Button:
+                    id:save
+                    text: app.language.translate("Save Settings")
+                    #font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                    font_name:"NotoSansDevanagari"
+                    background_normal: ""
+                    background_color: .15,.55,1,1
+
+                    on_release:
+                        root.background_theme()
+                        root.save_settings()
+
+<HistoryScreen>:
+
+    FloatLayout:
+
+        canvas.before:
+            Color:
+                rgba: .08,.08,.08,1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+        Button:
+            background_normal:"image/arrow_back.png"
+            background_down:"image/arrow_back.png"
+            size_hint:None,None
+            size:40,40
+            pos_hint:{"center_y":0.96,"center_x":0.05}
+            on_press:
+                app.root.current="home"
+
+        Label:
+            text: "Wish History"
+            font_size: "28sp"
+            font_name:"NotoSans"
+            bold: True
+            color: 1,1,1,1
+            size_hint: 1,None
+            height: "60dp"
+            pos_hint: {"top":1}
+
+        TextInput:
+            id: search
+            hint_text: "Search by name..."
+            multiline: False
+            size_hint: .4,None
+            height: "40dp"
+            pos_hint: {"x":.03,"top":.90}
+            on_text:
+                root.search_history(self.text)
+
+        GridLayout:
+            cols: 7
+            size_hint: .94,None
+            height: "40dp"
+            pos_hint: {"center_x":.5,"top":.82}
+            spacing: 12
+
+            canvas.before:
+                Color:
+                    rgba: .15,.15,.15,1
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+
+            Label:
+                text:"Name"
+                bold:True
+
+            Label:
+                text:"Platform"
+                bold:True
+
+            Label:
+                text:"Contact"
+                bold:True
+
+            Label:
+                text:"Subject"
+                bold:True
+
+            Label:
+                text:"Date"
+
+            Label:
+                text:"Time"
+
+            Label:
+                text:"Status"
+
+        ScrollView:
+            size_hint:.94,.62
+            pos_hint:{"center_x":.5,"y":.05}
+
+            GridLayout:
+                id: history_container
+                cols:1
+                spacing:15
+                size_hint_y:None
+                height:self.minimum_height
+
+
+<SettingScreen>:
+
+    FloatLayout:
+        canvas.before:
+            Rectangle:
+                pos:self.pos
+                size:self.size
+
+
+
+        Image:
+            id:image
+            source:"image/wisher-app-background_login.jpg"
+            size:1,1
+            fit_mode:"fill"
+            pos:self.pos
+            size:self.size
+
+
+        BoxLayout:
+            orientation:"vertical"
+            size_hint:None,1
+            width:"155dp"
+            spacing:10
+            padding:[0,10,0,0]
+            canvas.after:
+                Color:
+                    rgba: 1,1,1,1
+                Line:
+                    points: [self.right, self.y, self.right, self.top]
+                    width: 1
+
+            Button:
+                id:back
+                background_normal:"image/arrow_back.png"
+                background_down:"image/arrow_back.png"
+                size_hint:None,None
+                size:40,40
+                pos_hint:{"center_x":0.5}
+                on_press:
+                    app.root.current="home"
+
+            Widget:
+                size_hint_y:None
+                height:15
+
+            Button:
+                id:general
+                text:"General"
+                font_size:"16sp"
+                font_name:"NotoSans"
+                size_hint_y:None
+                size_hint_x:None
+                width:"155dp"
+                height:"45dp"
+                #pos_hint:{"center_y":0.80}
+                background_normal:""
+                background_color:0,0,0,0
+                background_down:""
+                on_press:
+                    root.show_general()
+
+                canvas.before:
+                    Color:
+                        rgba:1,1,1,.15
+                    Rectangle:
+                        pos:self.pos
+                        size:self.size
+
+                    Color:
+                        rgba:1,1,1,.35
+                    Line:
+                        rectangle:
+                            (self.x,self.y,self.width,self.height)
+                        width:1
+
+
+            Button:
+                id:storage
+                text:"Storage"
+                font_size:"16sp"
+                font_name:"NotoSans"
+                size_hint_y:None
+                size_hint_x:None
+                width:"155dp"
+                height:"45dp"
+                #pos_hint:{"center_y":0.80}
+                background_normal:""
+                background_color:0,0,0,0
+                background_down:""
+                on_press:
+                    root.show_storage()
+
+                canvas.before:
+                    Color:
+                        rgba:1,1,1,.15
+                    Rectangle:
+                        pos:self.pos
+                        size:self.size
+
+                    Color:
+                        rgba:1,1,1,.35
+                    Line:
+                        rectangle:
+                            (self.x,self.y,self.width,self.height)
+                        width:1
+
+
+            Button:
+                id:notification
+                text:"Notification"
+                font_size:"16sp"
+                font_name:"NotoSans"
+                size_hint_y:None
+                size_hint_x:None
+                width:"155dp"
+                height:"45dp"
+                #pos_hint:{"center_y":0.80}
+                background_normal:""
+                background_color:0,0,0,0
+                background_down:""
+                on_press:
+                    root.show_notification()
+                canvas.before:
+                    Color:
+                        rgba:1,1,1,.15
+                    Rectangle:
+                        pos:self.pos
+                        size:self.size
+
+                    Color:
+                        rgba:1,1,1,.35
+                    Line:
+                        rectangle:
+                            (self.x,self.y,self.width,self.height)
+                        width:1
+
+            Button:
+                id:about
+                text:"About"
+                font_size:"16sp"
+                font_name:"NotoSans"
+                size_hint_y:None
+                size_hint_x:None
+                width:"155dp"
+                height:"45dp"
+                #pos_hint:{"center_y":0.80}
+                background_normal:""
+                background_color:0,0,0,0
+                background_down:""
+                on_press:
+                    root.show_about()
+
+                canvas.before:
+                    Color:
+                        rgba:1,1,1,.15
+                    Rectangle:
+                        pos:self.pos
+                        size:self.size
+
+                    Color:
+                        rgba:1,1,1,.35
+                    Line:
+                        rectangle:
+                            (self.x,self.y,self.width,self.height)
+                        width:1
+
+            Button:
+                id:advanced
+                text:"Advanced"
+                font_size:"16sp"
+                font_name:"NotoSans"
+                size_hint_y:None
+                size_hint_x:None
+                width:"155dp"
+                height:"45dp"
+                #pos_hint:{"center_y":0.80}
+                background_normal:""
+                background_color:0,0,0,0
+                background_down:""
+                on_press:
+                    root.show_advanced()
+                    root.on_pre_enter()
+                canvas.before:
+                    Color:
+                        rgba:1,1,1,.15
+                    Rectangle:
+                        pos:self.pos
+                        size:self.size
+
+                    Color:
+                        rgba:1,1,1,.35
+                    Line:
+                        rectangle:
+                            (self.x,self.y,self.width,self.height)
+                        width:1
+
+            Widget:
+
+        FloatLayout:
+            id:content_area
+
+            Button:
+                id: save_btn
+                text: "Save"
+                size_hint: None, None
+                size: "120dp", "45dp"
+                pos_hint: {"right": 0.98, "y": 0.02}
+
+                opacity: 0
+                disabled: True
+
+                on_release:
+                    root.save_current_settings()
