@@ -3,23 +3,39 @@ import os
 import random
 import shutil
 import smtplib
+import sqlite3
+# import pywhatkit
+import subprocess
+import sys
+import threading
+import time
+import winreg
+
+from kivy.core.audio import SoundLoader
+from plyer import notification
+
+from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 from sched import scheduler
 
+import pyautogui
 import pystray
-from pystray import MenuItem as Item
-from PIL import Image
 import requests
+from PIL import Image
 from google.auth.transport.requests import Request
 from google.oauth2 import id_token
 from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from kivy.animation import Animation
 from kivy.app import App
 # from kivy.app import App
 from kivy.clock import Clock
+from kivy.core.text import LabelBase
+from kivy.core.window import Window
 from kivy.event import EventDispatcher
 from kivy.factory import Factory
+from kivy.lang import Builder
 from kivy.metrics import sp
 from kivy.properties import StringProperty, ListProperty, ColorProperty
 from kivy.uix.boxlayout import BoxLayout
@@ -27,22 +43,12 @@ from kivy.uix.button import Button
 # from kivy.uix.popup import Popup
 # from kivy.uix.label import Label
 from kivy.uix.screenmanager import ScreenManager, Screen
-from kivymd.uix.pickers import MDTimePickerDialHorizontal,MDModalDatePicker
-from kivy.lang import Builder
-from kivy.core.window import Window
-import sqlite3
-# import pywhatkit
-import subprocess
-import pyautogui
-import time
-import threading
 from kivymd.app import MDApp
-from datetime import datetime, timedelta
-from kivy.core.text import LabelBase
-from google_auth_oauthlib.flow import InstalledAppFlow
-from kivymd.uix.dialog import MDDialog, MDDialogHeadlineText,MDDialogSupportingText,MDDialogButtonContainer
 from kivymd.uix.button import MDButton, MDButtonText
+from kivymd.uix.dialog import MDDialog, MDDialogHeadlineText, MDDialogSupportingText, MDDialogButtonContainer
+from kivymd.uix.pickers import MDTimePickerDialHorizontal, MDModalDatePicker
 from kivymd.uix.widget import MDWidget
+from pystray import MenuItem as Item
 
 from languages import LANGUAGES
 
@@ -95,7 +101,8 @@ date TEXT,
 time TEXT,
 Platform TEXT,
 sent INTEGER DEFAULT 0,
-status TEXT
+status TEXT,
+reminder_sent INTEGER DEFAULT 0
 )
 """)
 conn.commit()
@@ -142,6 +149,16 @@ CREATE TABLE IF NOT EXISTS general_settings(
     time_format TEXT DEFAULT '12-Hour',
     date_format TEXT DEFAULT 'DD/MM/YYYY',
     time_zone TEXT DEFAULT 'Asia/Kolkata'
+)
+""")
+conn.commit()
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS notification_settings(
+    id INTEGER PRIMARY KEY,
+    enable_notification INTEGER DEFAULT 1,
+    sound INTEGER DEFAULT 1,
+    reminder TEXT
 )
 """)
 conn.commit()
@@ -1428,16 +1445,18 @@ class SettingScreen(Screen):
         self.current_tab = None
         self.general_content = GeneralContent()
         self.advanced_content=AdvancedContent()
+        self.notification_content = NotificationContent()
     def on_enter(self, *args):
         self.show_general()
 
     def show_notification(self):
         self.ids.content_area.clear_widgets()
-        self.ids.content_area.add_widget(NotificationContent())
-        self.ids.save_btn.opacity = 1
-        self.ids.save_btn.disabled = False
-
-        self.current_tab = "notification"
+        self.notification_content.load_ntf_settings()
+        self.ids.content_area.add_widget(self.notification_content)
+        # self.ids.save_btn.opacity = 1
+        # self.ids.save_btn.disabled = False
+        #
+        # self.current_tab = "notification"
 
     def show_storage(self):
         self.ids.content_area.clear_widgets()
@@ -1451,10 +1470,10 @@ class SettingScreen(Screen):
         self.ids.content_area.add_widget(
             self.general_content
         )
-        self.ids.save_btn.opacity = 1
-        self.ids.save_btn.disabled = False
-
-        self.current_tab = "general"
+        # self.ids.save_btn.opacity = 1
+        # self.ids.save_btn.disabled = False
+        #
+        # self.current_tab = "general"
 
     def show_about(self):
         self.ids.content_area.clear_widgets()
@@ -1468,10 +1487,10 @@ class SettingScreen(Screen):
         self.ids.content_area.add_widget(
             self.advanced_content
         )
-        self.ids.save_btn.opacity = 1
-        self.ids.save_btn.disabled = False
-
-        self.current_tab = "advanced"
+        # self.ids.save_btn.opacity = 1
+        # self.ids.save_btn.disabled = False
+        #
+        # self.current_tab = "advanced"
 
     def save_current_settings(self):
 
@@ -1488,7 +1507,69 @@ class SettingScreen(Screen):
             self.advanced_content.save_adv_settings()
 
 class NotificationContent(BoxLayout):
-    pass
+    
+    def save_ntf_settings(self):
+
+        notification_switch=int(self.ids.notification_switch.active)
+        sound_switch=int(self.ids.sound_switch.active)
+        reminder=self.ids.reminder.text
+        conn18=sqlite3.connect("user.db")
+        cursor18=conn18.cursor()
+
+        cursor18.execute("""
+        INSERT OR REPLACE INTO notification_settings(
+        id,
+        enable_notification,
+        sound,
+        reminder
+        ) VALUES(1,?,?,?)""",(notification_switch,sound_switch,reminder))
+
+        conn18.commit()
+
+
+        conn18.close()
+
+
+    def load_ntf_settings(self):
+        conn19=sqlite3.connect("user.db")
+        cursor19=conn19.cursor()
+
+        cursor19.execute("""SELECT * FROM notification_settings WHERE id=1""")
+
+        row=cursor19.fetchone()
+        if row:
+            self.ids.notification_switch.active=row[1]
+            self.ids.sound_switch.active=row[2]
+            self.ids.reminder.text=row[3]
+
+        conn19.close()
+        print("Notification settings loaded:",row)
+
+
+
+def play_notification_sound():
+    notification_sound=SoundLoader.load("audio/alert.wav")
+    if notification_sound:
+        notification_sound.play()
+
+def send_notification(title, message,enable_notification,sound):
+    app_icon="image/wisher-brand-logo.ico"
+    if not enable_notification:
+        return
+
+    notification.notify(
+        title=title,
+        message=message,
+        app_name="Wisher",
+        app_icon=app_icon,
+        timeout=10
+    )
+
+    # Play Windows notification sound
+    if sound:
+        play_notification_sound()
+
+
 
 class StorageContent(BoxLayout):
 
@@ -1618,11 +1699,61 @@ class GeneralContent(BoxLayout):
 
         conn15.close()
 
-    # if minimize_to_tray:
-    #     if tray==1:
-    #         Window.hide()
-    #     else:
-    #         App.get_running_app().stop()
+    def on_startup_switch(self,switch,value):
+        self.ids.startup_switch.active = value
+        if value == 1:
+            enable_startup()
+        else:
+            disable_startup()
+
+APP_NAME = "Wisher App"
+
+def enable_startup():
+    key = winreg.OpenKey(
+        winreg.HKEY_CURRENT_USER,
+        r"Software\Microsoft\Windows\CurrentVersion\Run",
+        0,
+        winreg.KEY_SET_VALUE
+    )
+
+    winreg.SetValueEx(
+        key,
+        APP_NAME,
+        0,
+        winreg.REG_SZ,
+        f'"{sys.executable}"'
+    )
+
+    winreg.CloseKey(key)
+
+def disable_startup():
+    try:
+        key = winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER,
+            r"Software\Microsoft\Windows\CurrentVersion\Run",
+            0,
+            winreg.KEY_SET_VALUE
+        )
+
+        winreg.DeleteValue(key, APP_NAME)
+        winreg.CloseKey(key)
+
+    except FileNotFoundError:
+        pass
+
+def startup_enabled():
+    try:
+        key = winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER,
+            r"Software\Microsoft\Windows\CurrentVersion\Run"
+        )
+
+        winreg.QueryValueEx(key, APP_NAME)
+        winreg.CloseKey(key)
+        return True
+
+    except FileNotFoundError:
+        return False
 
 class AboutContent(BoxLayout):
 
@@ -1635,6 +1766,7 @@ class AboutContent(BoxLayout):
         print("Share App Clicked")
 
 scheduler_thread= threading.Thread(target=scheduler.run)
+notification_thread= threading.Thread(target=notification.notify)
 class AdvancedContent(BoxLayout):
 
     def save_adv_settings(self):
@@ -1664,12 +1796,21 @@ class AdvancedContent(BoxLayout):
     def start_scheduler(self):
 
         global scheduler_thread
+        global notification_thread
+
         scheduler_status=self.ids.scheduler_status
         if scheduler_thread is None or not scheduler_thread.is_alive():
             scheduler_stop_event.clear()
             scheduler_thread = threading.Thread(target=run_scheduler,daemon=True).start()
             print("Scheduler Started")
             scheduler_status.text="Running"
+
+        if notification_thread is None or not notification_thread.is_alive():
+            notification_thread = threading.Thread(
+                target=notification_scheduler,
+                daemon=True
+            )
+            notification_thread.start()
 
 
 
@@ -1869,14 +2010,8 @@ def send_message(wish):
         except Exception as e:
             print(e)
 
-    # if "SMS" in plat_form:
-    #     bird=Bird(api_key="bk_us1_V4r5EyYF6q2xOx7CjrM83LE25beY2")
-    #     bird.sms.send(
-    #         to=recipient_phone,
-    #         msg={
-    #
-    #         }
-    #     )
+    if "SMS" in plat_form:
+        
 
 
 def scheduler_interval():
@@ -1900,14 +2035,23 @@ def check_wishes():
     all_wishes = cursor1.fetchall()
 
     now = datetime.now()
+
+    cursor1.execute("SELECT enable_notification,sound,reminder FROM notification_settings WHERE id=1")
+    row=cursor1.fetchone()
+    if row:
+        enable_notification=row[0]
+        sound=row[1]
+    else:
+        enable_notification=True
+        sound=True
     for wish in all_wishes:
         wish_id = wish[0]
         name = wish[1]
-        # phone = wish[2]
-        # message = wish[3]
         date = wish[6]
         time_str = wish[7]
         plat_form=wish[8].split(",")
+
+
 
         try:
             # Combine date + time
@@ -1919,12 +2063,13 @@ def check_wishes():
             conn1.commit()
             continue
 
-
+        # ---------------- Pending ----------------
         if wish_time > now:
             cursor1.execute("""UPDATE wishes SET status="Pending" WHERE id=?""", (wish_id,))
             conn1.commit()
             continue
-            # ⏱ Check if within 1-minute window
+
+        # ---------------- Send Wish ----------------
         if wish_time <= now <= wish_time + timedelta(seconds=interval):
 
             try:
@@ -1937,6 +2082,12 @@ def check_wishes():
                 )
 
                 conn1.commit()
+                send_notification(
+                    enable_notification=enable_notification,
+                    sound=sound,
+                    title="Wish Sent",
+                   message= f"{name}'s wish was sent successfully."
+                )
 
                 if "WhatsApp" in plat_form:
                     # Exit WhatsApp after 10 seconds
@@ -1951,7 +2102,98 @@ def check_wishes():
         elif now>wish_time+timedelta(seconds=interval):
             cursor1.execute("""UPDATE wishes SET status="Failed" WHERE id=?""",(wish_id,))
             conn1.commit()
+            send_notification(
+                enable_notification=enable_notification,
+                sound=sound,
+                title="Wish failed",
+                message=f"{name}'s wish was failed"
+            )
     conn1.close()
+
+
+def check_notifications():
+
+    conn21 = sqlite3.connect("user.db")
+    cursor21 = conn21.cursor()
+
+
+
+    # Read notification settings once
+    cursor21.execute("""
+        SELECT enable_notification,
+               sound,
+               reminder
+        FROM notification_settings
+        WHERE id=1
+    """)
+
+    row = cursor21.fetchone()
+
+    if row:
+        enable_notification = bool(row[0])
+        sound = bool(row[1])
+        reminder = row[2]
+    else:
+        enable_notification = True
+        sound = True
+        reminder = "5 minutes"
+
+    reminder_map = {
+        "5 minutes": 5,
+        "10 minutes": 10,
+        "15 minutes": 15,
+        "30 minutes": 30,
+        "1 hour": 60
+    }
+
+    reminder_minutes = reminder_map.get(reminder.lower(), 5)
+    # Read only pending wishes
+    cursor21.execute("""
+           SELECT id, name, date, time, reminder_sent
+           FROM wishes
+           WHERE sent=0
+       """)
+
+    wishes = cursor21.fetchall()
+
+    now = datetime.now()
+
+    for wish in wishes:
+
+        wish_id = wish[0]
+        name = wish[1]
+        wish_date = wish[2]
+        wish_time_str = wish[3]
+        reminder_sent = int(wish[4])
+
+        if reminder_sent==1:
+            continue
+        wish_time = datetime.strptime(
+            f"{wish_date} {wish_time_str}",
+            "%Y-%m-%d %H:%M:%S %p"
+        )
+
+        reminder_time = wish_time - timedelta(
+            minutes=reminder_minutes
+        )
+
+        if reminder_time <= now < wish_time:
+            send_notification(
+                enable_notification=enable_notification,
+                sound=sound,
+                title="Upcoming Wish",
+                message=f"{name}'s wish will be sent in {reminder}."
+            )
+
+            cursor21.execute("""
+                UPDATE wishes
+                SET reminder_sent=1
+                WHERE id=?
+            """, (wish_id,))
+
+            conn21.commit()
+            continue
+    conn21.close()
 
 scheduler_stop_event=threading.Event()
 
@@ -1964,6 +2206,15 @@ def run_scheduler():
             print("Scheduler Error:", e)
 
         time.sleep(1)  # check every 30 seconds (better accuracy)   # check every minute
+
+def notification_scheduler():
+    while not scheduler_stop_event.is_set():
+        try:
+            check_notifications()
+        except Exception as e:
+            print("Notification scheduler Error:", e)
+
+        time.sleep(1)
 
 def reset_scheduler_status():
     conn14=sqlite3.connect("user.db")
@@ -2041,7 +2292,7 @@ class WisherApp(MDApp):
         image = Image.open("image/wisher-brand-logo.png")  # Use your app icon
 
         menu = pystray.Menu(
-            Item("Open", self.restore_window),
+            Item("Open", self.restore_window,default=True),
             Item("Exit", self.exit_app)
         )
         self.tray_icon = pystray.Icon(
@@ -2068,11 +2319,10 @@ class WisherApp(MDApp):
 
         if row[0]==1:
             threading.Thread(
-                target=run_scheduler,
-                daemon=True
+                target=run_scheduler, daemon=True
             ).start()
-        # threading.Thread(target=run_scheduler, daemon=True).start()
             reset_scheduler_status()
+            threading.Thread(target=notification_scheduler, daemon=True).start()
         # else:
         #     cursor16.execute("""
         #     UPDATE advanced_settings SET scheduler_status = 'Stopped' WHERE id=1""")

@@ -386,16 +386,15 @@
 
     Widget:
 
-    #Button:
-    #    id:save
-    #    text: "Save"
-    #    size_hint_x:None
-    #    size_hint_y: None
-    #    height: "45dp"
-    #    pos_hint:{"center_x":0.6}
+    Button:
+        text: "Save"
+        size_hint_x:None
+        size_hint_y: None
+        height: "45dp"
+        pos_hint:{"center_x":0.6}
 
-    #    on_release:
-    #        root.save_general_settings()
+        on_release:
+            root.save_general_settings()
 
 <StorageContent>:
     orientation: "vertical"
@@ -515,12 +514,18 @@
             font_name:"NotoSans"
 
         Spinner:
+            id:reminder
             text:"15 minutes"
             values:
                 ("5 minutes","15 minutes","30 minutes","1 hour")
 
     Widget:
-
+    Button:
+        text:"Save"
+        size_hint:None,0.1
+        pos_hint:{"center_x":0.6}
+        on_press:
+            root.save_ntf_settings()
 
 <HistoryCard>:
 
@@ -3981,16 +3986,3 @@ WindowManager:
 
         FloatLayout:
             id:content_area
-
-            Button:
-                id: save_btn
-                text: "Save"
-                size_hint: None, None
-                size: "120dp", "45dp"
-                pos_hint: {"right": 0.98, "y": 0.02}
-
-                opacity: 0
-                disabled: True
-
-                on_release:
-                    root.save_current_settings()
