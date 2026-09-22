@@ -2,6 +2,7 @@
 #:import Gradient kivy_gradient.Gradient
 #:import CheckBox kivy.uix.checkbox
 #:import DropDown kivy.uix.dropdown
+#:import utils kivy.utils
 
 <ProfileSpinnerOption@SpinnerOption>:
     background_normal: ""
@@ -589,7 +590,7 @@
             CheckBox:
                 id:email_cb
                 color:0,0,0,1
-                #on_active: root.update_platform_text()
+                on_active: app.root.get_screen("add_wish").email_checkbox(self,self.active)
                 size_hint: None,None
                 size:"30dp","30dp"
                 #pos_hint:{"center_x":0.5}
@@ -678,32 +679,6 @@
     background_normal: ""
     background_color: 1,1,1,1
 
-
-#<RoundedTextInput@TextInput>:
-#    background_normal: ""
-#    background_active:""
-#
-#    cursor_color: 0,0,0,1
-#    multiline:False
-#    padding: [20,15]
-#    pos_hint:{"center_x":0.5}
-#
-#    canvas.before:
-#        Color:
-#            rgba: 1,1,1,0.15
-#        RoundedRectangle:
-#            pos: self.pos
-#            size: self.size
-#            radius: [20]
-#
-#        Color:
-#            rgba: 1,1,1,0.35
-#        Line:
-#            rounded_rectangle:
-#                (self.x, self.y, self.width, self.height, 20)
-#            width: 1.2
-
-
 <RoundedButton@Button>
     background_normal: ""
     background_down: ""
@@ -788,6 +763,7 @@ WindowManager:
 
         # Background (fills entire screen)
         Image:
+            id:background_logo
             source:"image/flash_screen_ui_background.png"
             size_hint:1,1
             fit_mode:"fill"
@@ -805,30 +781,98 @@ WindowManager:
             size:
                 min(root.width * 0.28, 350), \
                 min(root.height * 0.28, 350)
-            pos_hint:
-                {"center_x": 0.5, "center_y": 0.5}
+            pos_hint:{"center_x": 0.5, "center_y": 0.5}
+            opacity:0
 
 
+        FloatLayout:
+            id: splash_word
+            size_hint: None, None
+            size: dp(350), dp(40)
+            pos_hint: {"center_x": 0.5, "center_y": 0.37}
+            Label:
+                id: letter_w
+                text: "W"
+                font_size: "30sp"
+                font_name: "fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                size_hint: None, None
+                size: self.texture_size
+                pos: dp(85), dp(25)
+                opacity: 0
+                color: 0.36, 0.25, 0.20, 1
+                pos_hint:{"center_x":0.37,"center_y":0.37}
 
-        Label:
-            id:splash_label
-            text:"Wisher"
-            font_size:"40sp"
-            font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
-            opacity:1
-            pos_hint:{"center_y":0.37}
-            color:0.36, 0.25, 0.20, 1
+            Label:
+                id: letter_i
+                text: "i"
+                font_size: "30sp"
+                font_name: "fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                size_hint: None, None
+                size: self.texture_size
+                pos: dp(115), dp(25)
+                opacity: 0
+                color: 0.36, 0.25, 0.20, 1
+                pos_hint:{"center_x":0.43,"center_y":0.37}
+
+            Label:
+                id: letter_s
+                text: "s"
+                font_size: "30sp"
+                font_name: "fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                size_hint: None, None
+                size: self.texture_size
+                pos: dp(140), dp(25)
+                opacity: 0
+                color: 0.36, 0.25, 0.20, 1
+                pos_hint:{"center_x":0.47,"center_y":0.37}
+
+            Label:
+                id: letter_h
+                text: "h"
+                font_size: "30sp"
+                font_name: "fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                size_hint: None, None
+                size: self.texture_size
+                pos: dp(165), dp(25)
+                opacity: 0
+                color: 0.36, 0.25, 0.20, 1
+                pos_hint:{"center_x":0.53,"center_y":0.37}
+
+            Label:
+                id: letter_e
+                text: "e"
+                font_size: "30sp"
+                font_name: "fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                size_hint: None, None
+                size: self.texture_size
+                pos: dp(190), dp(25)
+                opacity: 0
+                color: 0.36, 0.25, 0.20, 1
+                pos_hint:{"center_x":0.59,"center_y":0.37}
+
+            Label:
+                id: letter_r
+                text: "r"
+                font_size: "30sp"
+                font_name: "fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                size_hint: None, None
+                size: self.texture_size
+                pos: dp(215), dp(25)
+                opacity: 0
+                color: 0.36, 0.25, 0.20, 1
+                pos_hint:{"center_x":0.65,"center_y":0.37}
 
         ProgressBar:
-            id: loading_bar
+            id:progress_bar
+            min:0
             max: 100
             value: 0
             size_hint: .45,None
-            height: 8
+            height: dp(8)
             pos_hint: {"center_x":0.5,"y":0.08}
 
         Label:
-            id: loading_text
+            id:loading_text
             text: "Loading..."
             font_size: "16sp"
             color: 0.36, 0.25, 0.20, 1
@@ -1898,10 +1942,9 @@ WindowManager:
                         (self.x,self.y,self.width,self.height,30)
                     width:1.2
 
-            BoxLayout:
+            MDFloatLayout:
                 size_hint:0.9,0.1
                 pos_hint:{"center_x":0.5}
-                padding:[30,0,0,0]
                 canvas.before:
                     Color:
                         rgba:1,1,1,.15
@@ -1916,26 +1959,32 @@ WindowManager:
                             (self.x,self.y,self.width,self.height,10)
                         width:1.2
 
-                Button:
-                    id:mode
-                    text:"Select Platform"
-                    color: 1,1,1,1
-                    font_size:"16sp"
-                    font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                MDButton:
+                    style: "filled"
                     size_hint_x:None
-                    width:"145dp"
-                    background_normal:""
-                    background_color:0,0,0,0
-                    padding:[10,0,0,0]
-                    #pos_hint:{"center_x":0.5}
+                    size_hint_y:None
+                    width:"350dp"
+                    height:"35dp"
+                    pos_hint:{"center_x":0.5,"center_y":0.5}
                     on_release:
                         root.open_platform_dialog()
 
-                Image:
-                    source:"image/arrow_down_30.png"
-                    size_hint:None,None
-                    size:30,30
-                    pos_hint:{"center_y":0.5}
+                    MDButtonText:
+                        id: mode
+                        text: "Select Platform"
+                        font_size: "16sp"
+                        font_name: "fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                        theme_text_color: "Custom"
+                        text_color: 1, 1, 1, 1
+
+                    MDIcon:
+                        id: arrow_image
+                        icon: "chevron-down"
+                        theme_icon_color: "Custom"
+                        icon_color: 1, 1, 1, 1
+                        size_hint: None, None
+                        size: 30, 30
+
 
 
             BoxLayout:
@@ -2137,7 +2186,6 @@ WindowManager:
                     hint_text_color:1,1,1,1
                     multiline: True
                     padding: [15,15]
-
                     font_size: 16
                     font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
                     background_normal: ""
@@ -2168,7 +2216,7 @@ WindowManager:
                         width: 1.2
 
                 # 📅 Date
-                TextInput:
+                DateTextInput:
                     id: wish_date
                     hint_text: "Date (YYYY-MM-DD)"
                     hint_text_color:1,1,1,1
@@ -2183,6 +2231,7 @@ WindowManager:
                     foreground_color: 0,0,0,1
                     cursor_color: 0,0,0,1
                     pos_hint:{"center_x":0.5}
+
 
                 Button:
                     background_normal:"image/calendar.png"
@@ -2213,7 +2262,7 @@ WindowManager:
                         width: 1.2
 
                 # ⏰ Time
-                TextInput:
+                TimeTextInput:
                     id: wish_time
                     hint_text: "Select Time"
                     hint_text_color:1,1,1,1
@@ -2228,6 +2277,7 @@ WindowManager:
                     foreground_color: 0,0,0,1
                     cursor_color: 0,0,0,1
                     pos_hint:{"center_x":0.5}
+
 
                 Button:
                     background_normal:"image/clock.png"
@@ -2268,9 +2318,9 @@ WindowManager:
         #overlay
         Button:
             id:overlay
-            opacity:1
+            opacity:0
             size_hint:0,0
-            #disabled:True
+            disabled:True
             background_normal:""
             background_down:""
             background_color:0,0,0,0
@@ -2290,16 +2340,17 @@ WindowManager:
             size:30,30
             background_normal:"image/menu.png"
             background_down:"image/menu.png"
-            background_color:1,1,1,1
+            background_color: (0.27, 0.51, 0.71, 1) if self.state == "down" else (1,1,1,1)
             pos_hint:{"x":0.01,"center_y":0.9}
-            on_press:
+            on_release:
                 root.side_menu()
 
         BoxLayout:
             id: side_panel
             orientation:"vertical"
             pos_hint:{"center_y":0.45}
-            size_hint:0.26,0.75
+            size_hint:None,None
+            size:"190dp","440dp"
             x:-self.width
             y:0.5
             spacing: 18
@@ -2351,7 +2402,7 @@ WindowManager:
                     color: 1, 1, 1, 1
 
                     on_release:
-                        root.side_menu()
+                        #root.side_menu()
                         root.connect_gmail()
 
             BoxLayout:
@@ -2594,7 +2645,7 @@ WindowManager:
                     background_color:0,0,0,0
                     on_press:
                         root.side_menu()
-                        app.root.current="home"
+                        app.root.current="setting"
 
             Widget:
                 # 🔙 Back Button
@@ -2642,7 +2693,7 @@ WindowManager:
                     pos_hint: {"center_x":0.5,"center_y":0.5}
                     on_press:
                         root.side_menu()
-                        app.root.current = "login"
+                        app.root.get_screen('home').logout()
 
             Widget:
 
@@ -2661,13 +2712,15 @@ WindowManager:
             fit_mode:"fill"
             size:self.size
             pos:self.pos
-            size:1,1
+            size_hint:1,1
 
-        GradientLabel:
-            id: welcome_label
-            text: "Welcome to Wisher"
-            size_hint:0.8,0.1
-            pos_hint: {"center_x":0.5, "center_y":0.6}
+        Image:
+            id:text_image
+            opacity:0
+            source:"image/welcome-to-wisher-text.png"
+            fit_mode:"contain"
+            pos_hint:{"center_x":0.5,"center_y":0.55}
+            size_hint:0.5,0.5
 
 <HomeScreen>:
 
@@ -2909,11 +2962,10 @@ WindowManager:
         Button:
             id:overlay
             opacity:0
-            size_hint:1,1
             disabled:True
             background_color:0,0,0,0
             on_release:
-                root.side_menu()
+                root.close_side_menu()
             canvas.before:
                 Color:
                     rgba:0,0,0,self.opacity*0.45
@@ -2928,9 +2980,9 @@ WindowManager:
             size:30,30
             background_normal:"image/menu.png"
             background_down:"image/menu.png"
-            background_color: 1,1,1,1
+            background_color: (0.27, 0.51, 0.71, 1) if self.state == "down" else (1,1,1,1)
             pos_hint:{"x":0.03,"center_y":0.92}
-            on_press:
+            on_release:
                 root.side_menu()
 
         BoxLayout:
@@ -2996,7 +3048,8 @@ WindowManager:
             id: side_panel
             orientation:"vertical"
             pos_hint:{"center_y":0.45}
-            size_hint:0.26,0.7
+            size_hint:None,None
+            size:"190dp","440dp"
             x:-self.width
             y:0.5
             spacing: 18
@@ -3012,10 +3065,7 @@ WindowManager:
                     size: self.size
                     radius: [5]
 
-                #Line:
-                #    rounded_rectangle:
-                #        (self.x,self.y,self.width,self.height,5)
-                #    width:1.2
+
 
             BoxLayout:
                 orientation:"horizontal"
@@ -3045,8 +3095,6 @@ WindowManager:
                     size_hint:None,None
                     size:30,30
                     pos_hint:{"center_x":0.5,"center_y":0.5}
-
-
 
                 HoverButton:
                     id:home
@@ -3248,7 +3296,7 @@ WindowManager:
 
 
             Widget:
-                # 🔙 Back Button
+                # 🔙 Logout Button
             BoxLayout:
                 orientation:"horizontal"
                 size_hint_x:None
@@ -3291,7 +3339,7 @@ WindowManager:
                     pos_hint: {"center_x":0.5,"center_y":0.5}
                     on_press:
                         root.side_menu()
-                        app.root.current = "login"
+                        root.logout()
 
             Widget:
 
@@ -3314,9 +3362,9 @@ WindowManager:
             pos:self.pos
             size:self.size
 
-        Button:
+        HoverButton:
             background_normal:"image/arrow_back.png"
-            background_down:""
+            background_down:"image/arrow_back.png"
             background_color: (0.27, 0.51, 0.71, 1) if self.state == "down" else (1,1,1,1)
             size_hint:None,None
             size:40,40
@@ -3403,37 +3451,95 @@ WindowManager:
                             (self.x,self.y,self.width,self.height,10)
                         width:1.2
 
+
             Label:
                 text: "Email"
                 color: 1,1,1,1
                 halign: "left"
+                valign:"top"
                 text_size: self.size
 
-            TextInput:
-                id: email
-                multiline: False
-                hint_text: "Enter your email"
-                size_hint_y: None
-                height: "45dp"
-                background_normal:""
-                background_color:0,0,0,0
-                foreground_color:0,0,0,1
-                cursor_color:0,0,0,1
-                padding:[10,15,0,15]
+            FloatLayout:
+                size_hint:None,None
+                size:"300dp","0dp"
 
-                canvas.after:
-                    Color:
-                        rgba:1,1,1,.15
-                    RoundedRectangle:
-                        pos:self.pos
-                        size:self.size
-                        radius:[10]
-                    Color:
-                        rgba:1,1,1,1
-                    Line:
-                        rounded_rectangle:
-                            (self.x,self.y,self.width,self.height,10)
-                        width:1.2
+
+                TextInput:
+                    id: email
+                    multiline: False
+                    hint_text: "Enter your email"
+                    size_hint_y: None
+                    height: "45dp"
+                    background_normal:""
+                    background_color:0,0,0,0
+                    foreground_color:0,0,0,1
+                    cursor_color:0,0,0,1
+                    padding:[10,15,0,15]
+                    pos_hint:{"center_x":0.5,"center_y":0.1}
+
+                    canvas.after:
+                        Color:
+                            rgba:1,1,1,.15
+                        RoundedRectangle:
+                            pos:self.pos
+                            size:self.size
+                            radius:[10]
+                        Color:
+                            rgba:1,1,1,1
+                        Line:
+                            rounded_rectangle:
+                                (self.x,self.y,self.width,self.height,10)
+                            width:1.2
+                HoverButton:
+                    id:verify
+                    text:"Verify"
+                    font_name:"NotoSans"
+                    font_size:"10sp"
+                    color:0,0,1,1
+                    size_hint_x:None
+                    size_hint_y:None
+                    width:"30dp"
+                    height:"10dp"
+                    background_color:0,0,0,0
+                    background_down:""
+                    background_normal:""
+                    pos_hint:{"center_x":0.9,"center_y":0.8}
+                    opacity:1
+                    disabled:False
+                    on_press:
+                        root.verify_email()
+
+                TextInput:
+                    id:OTP
+                    hint_text:"OTP"
+                    multiline:False
+                    font_name:"NotoSans"
+                    font_size:"10sp"
+                    color:0,0,1,1
+                    cursor_color:0,0,0,1
+                    size_hint_x:None
+                    size_hint_y:None
+                    width:"50dp"
+                    height:"30dp"
+                    background_color:0,0,0,0
+                    background_down:""
+                    background_normal:""
+                    pos_hint:{"center_x":0.9,"center_y":0.8}
+                    opacity:0
+                    disabled:True
+                    on_text:root.verify_otp(self.text) if len(self.text)==5 else None
+
+                Label:
+                    id:verified
+                    text:""
+                    font_name:"NotoSans"
+                    font_size:"13sp"
+                    size_hint_x:None
+                    size_hint_y:None
+                    width:"30dp"
+                    height:"10dp"
+                    opacity:0
+                    pos_hint:{"center_x":0.9,"center_y":0.8}
 
             Label:
                 text: "Phone Number"
@@ -3512,187 +3618,809 @@ WindowManager:
             pos:self.pos
             size:self.size
 
-        Button:
+        HoverButton:
             background_normal:"image/arrow_back.png"
             background_down:"image/arrow_back.png"
+            background_color: (0.27, 0.51, 0.71, 1) if self.state == "down" else (1,1,1,1)
             size_hint:None,None
             size:40,40
             pos_hint:{"center_y":0.92,"center_x":0.06}
             on_press:
                 app.root.current="home"
 
+        Label:
+            id:personalize
+            text: "Personalization"
+            font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+            font_size: "28sp"
+            bold: True
+            color: 1,1,1,1
+            size_hint_y: None
+            height: "45dp"
+            pos_hint:{"center_x":0.5,"center_y":0.95}
+
+        Label:
+            id:text
+            text:"Shape the interface around you — colors, typography and language"
+            font_size:"16sp"
+            font_name:"NotoSans"
+            pos_hint:{"center_y":0.9}
 
         BoxLayout:
             orientation: "vertical"
-            size_hint: 0.65, 0.85
-            pos_hint: {"center_x":0.5,"center_y":0.5}
+            size_hint: None, 0.85
+            width:"500dp"
+            pos_hint: {"center_x":0.5,"center_y":0.45}
             spacing: 20
             padding: 20
 
             canvas.before:
                 Color:
-                    rgba: 1,1,1,.15
+                    rgba: root.outer_container_color
                 RoundedRectangle:
                     pos: self.pos
                     size: self.size
                     radius: [20]
                 Color:
-                    rgba:1,1,1,.35
+                    rgba:1,1,1,.10
                 Line:
                     rounded_rectangle:
                         (self.x,self.y,self.width,self.height,20)
                     width:1.2
 
-            Label:
-                id:personalize
-                text: "Personalize"
-                font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
-                font_size: "28sp"
-                bold: True
-                color: 1,1,1,1
-                size_hint_y: None
-                height: "45dp"
-
-            ################################################
-
-            Label:
-                id:theme
-                text: "Theme"
-                font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
-                color: 1,1,1,1
-                font_size: "18sp"
-                text_size: self.size
-                halign: "left"
-
-            Spinner:
-                id: theme_spinner
-                text: "Light"
-                values: ("Dark","Light")
-                size_hint_y: None
-                height: "45dp"
-
-            ################################################
-
-            Label:
-                id:language
-                text: "Language"
-                color: 1,1,1,1
-                font_size: "18sp"
-                font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
-                text_size: self.size
-                halign: "left"
-
-            Spinner:
-                id: language_spinner
-                text: "English"
-                #font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
-                font_name:"NotoSansDevanagari"
-                values:
-                    ("English",
-                    "Hindi",
-                    "French",
-                    "Spanish")
-
-                size_hint_y: None
-                height: "45dp"
-                #on_text:
-                 #   root.translate()
-
-            ################################################
-
-            Label:
-                id:font_size
-                text: "Font Size"
-                font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
-                color: 1,1,1,1
-                font_size: "18sp"
-                text_size: self.size
-                halign: "left"
-
-            Slider:
-                id: font_slider
-                min: 12
-                max: 30
-                value: 18
-                step: 1
-
-            Label:
-                id: font_value
-                font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
-                text: str(int(font_slider.value))
-                color: 1,1,1,1
-                font_size: "16sp"
-
-            ################################################
-
-            Label:
-                id:accent
-                text: "Accent Color"
-                font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
-                color: 1,1,1,1
-                font_size: "18sp"
-                text_size: self.size
-                halign: "left"
-
             BoxLayout:
-                size_hint_y: None
-                height: "45dp"
-                spacing: 10
-
-                Button:
-                    background_normal: ""
-                    background_color: 0.15,0.45,1,1
-                    on_release:
-                        root.select_color("Blue")
-
-                Button:
-                    background_normal: ""
-                    background_color: 0.15,0.8,0.3,1
-                    on_release:
-                        root.select_color("Green")
-
-                Button:
-                    background_normal: ""
-                    background_color: 0.75,0.25,1,1
-                    on_release:
-                        root.select_color("Purple")
-
-                Button:
-                    background_normal: ""
-                    background_color: 1,0.2,0.2,1
-                    on_release:
-                        root.select_color("Red")
-
-            Widget:
-
-            ################################################
-
-            BoxLayout:
-                size_hint_y: None
-                height: "50dp"
+                id:content_container
+                orientation: "vertical"
+                size_hint: 1, 1
+                pos_hint: {"center_x":0.5,"center_y":0.5}
                 spacing: 20
+                padding: 20
 
-                Button:
-                    id:restore
-                    text: "Restore Default"
-                    font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
-                    background_normal: ""
-                    background_color: .7,.2,.2,1
+                canvas.before:
+                    Color:
+                        rgba: root.content_container_color
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [20]
 
-                    on_release:
-                        root.restore_default()
 
-                Button:
-                    id:save
-                    text: app.language.translate("Save Settings")
-                    #font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
-                    font_name:"NotoSansDevanagari"
-                    background_normal: ""
-                    background_color: .15,.55,1,1
 
-                    on_release:
-                        root.background_theme()
-                        root.save_settings()
+                MDBoxLayout:
+                    spacing: "15dp"
+                    size_hint:None,None
+                    width:"350dp"
+                    height:"150dp"
+                    pos_hint:{"center_x":0.4,"center_y":0.4}
+
+                    # Icon + Themes
+                    MDBoxLayout:
+                        orientation: "horizontal"
+                        size_hint_x:None
+                        size_hint_y: None
+                        width:"150dp"
+                        height: "30dp"
+                        spacing: "8dp"
+                        pos_hint:{"center_x":0.18,"center_y":0.9}
+
+                        MDBoxLayout:
+                            id:palette_circle
+                            size_hint_x:None
+                            size_hint_y:None
+                            width:"40dp"
+                            height:"40dp"
+
+                            pos_hint: {"center_x": 0.5,"center_y":0.5}
+
+                            canvas.before:
+                                Color:
+                                    rgba: root.palette_container_color
+                                RoundedRectangle:
+                                    pos: self.pos
+                                    size: self.size
+                                    radius: [30,30,30,30]
+
+                            MDIcon:
+                                id:palette_color
+                                icon: "palette-outline"
+
+                                theme_font_size: "Custom"
+                                font_size: "24sp"
+
+                                theme_icon_color: "Custom"
+                                icon_color: 0, 0, 0, 1
+                                pos_hint:{"center_y":0.5}
+                                padding:[10,0,0,0]
+
+
+                        MDBoxLayout:
+                            orientation:"vertical"
+                            size_hint_x:None
+                            size_hint_y: None
+                            width:"150dp"
+                            height:"40dp"
+                            #spacing: "8dp"
+                            #padding:[0,"5dp",0,0,]
+                            pos_hint:{"center_x":0.5,"center_y":0.5}
+
+                            MDLabel:
+                                id:theme_text
+                                text: "Themes"
+                                font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                                font_style:"Title"
+                                role:"medium"
+                                color: 0,0,0,1
+                                font_size: "18sp"
+                                text_size: self.size
+                                halign: "left"
+                                valign:"top"
+
+
+                            MDLabel:
+                                id:theme_sub_label
+                                text: "Choose Your Palette"
+                                text_color:0.5, 0.5, 0.5, 1.0
+                                font_name:"NotoSans"
+                                font_size:"13sp"
+                                font_style: "Label"
+                                role:"small"
+                                text_size: self.size
+                                halign: "left"
+                                valign:"bottom"
+
+                    #------------- cards------------
+
+                    FloatLayout:
+                        id:theme
+                        size_hint:None,None
+                        width:"250dp"
+                        height:"120dp"
+                        spacing:"20dp"
+
+                        # Dawn Card
+                        MDCard:
+                            id:dawn
+                            theme_line_color: "Custom"
+                            line_color: (0, 0, 0, 1) if root.selected_theme=="dawn" else (1,1,1,0.60)
+                            line_width: dp(0.5)
+                            radius: [20]
+                            ripple_behavior: True
+                            # Press opacity
+                            state_press: 0.12
+
+                            size_hint:0.5,0.8
+                            theme_bg_color:"Custom"
+                            md_bg_color: (1,1,1,1) if root.selected_theme=="dawn" else (1,1,1,0.50)
+                            pos_hint:{"center_x":-0.35,"center_y":0.45}
+                            on_release: root.background_theme("dawn")
+
+                            MDFloatLayout:
+
+                                MDLabel:
+                                    id:dawn_text
+                                    text: "Dawn"
+                                    font_name:"NotoSans"
+                                    role:"small"
+                                    font_style: "Label"
+                                    text_size:self.size
+                                    halign:"left"
+                                    valign:"bottom"
+                                    pos_hint:{"x":0.20,"y":0.1}
+
+
+                                MDIcon:
+                                    id:dawn_check
+                                    icon: "check"
+                                    style:"standard"
+                                    theme_font_size: "Custom"
+                                    font_size: "14sp"
+
+
+                                    theme_icon_color: "Custom"
+                                    icon_color: 0, 0, 0, 1
+                                    pos_hint:{"x":0.8,"y":0.1}
+                                    opacity: 1 if root.selected_theme=="dawn" else 0
+
+
+
+                            FloatLayout:
+                                MDBoxLayout:
+                                    pos_hint:{"center_x":0,"y":0.4}
+                                    size_hint_x:None
+                                    size_hint_y:None
+                                    width:"100dp"
+                                    height:"50dp"
+                                    canvas.before:
+                                        Color:
+                                            rgba:1,1,1,1
+                                        RoundedRectangle:
+                                            pos:self.pos
+                                            size:self.size
+                                            radius:[20]
+                                            texture:Gradient.horizontal(utils.get_color_from_hex("#f9c9b6"),utils.get_color_from_hex("#c8a2c8"),utils.get_color_from_hex("#4c4a8a"))
+
+
+
+                        # Midnight Card
+                        MDCard:
+                            id:midnight
+                            theme_line_color: "Custom"
+                            line_color: (0, 0, 0, 1) if root.selected_theme=="midnight" else (1,1,1,0.60)
+                            line_width: dp(0.5)
+                            radius: [20]
+                            ripple_behavior: True
+                            ripple_color:(1,1,1,0.80)
+                            size_hint:0.5,0.8
+                            theme_bg_color:"Custom"
+                            md_bg_color: (1,1,1,1) if root.selected_theme=="midnight" else (1,1,1,0.50)
+                            pos_hint:{"center_x":0.25,"center_y":0.45}
+                            on_release: root.background_theme("midnight")
+
+                            MDFloatLayout:
+                                MDLabel:
+                                    id:midnight_text
+                                    text: "Midnight"
+                                    font_name:"NotoSans"
+                                    font_style: "Label"
+                                    text_size:self.size
+                                    halign:"left"
+                                    valign:"bottom"
+                                    pos_hint:{"x":0.20,"y":0.1}
+                                    role:"small"
+                                    #size_hint_x:1
+
+                                MDIcon:
+                                    id:midnight_check
+                                    icon: "check"
+                                    style:"standard"
+                                    theme_font_size: "Custom"
+                                    font_size: "14sp"
+                                    size_hint:None,None
+                                    size:dp(20),dp(20)
+                                    theme_icon_color: "Custom"
+                                    icon_color: 0, 0, 0, 1
+                                    pos_hint:{"x":0.92,"y":0.12}
+                                    opacity: 1 if root.selected_theme=="midnight" else 0
+
+                            FloatLayout:
+                                MDBoxLayout:
+                                    pos_hint:{"center_x":0,"y":0.4}
+                                    size_hint_x:None
+                                    size_hint_y:None
+                                    width:"100dp"
+                                    height:"50dp"
+                                    canvas.before:
+                                        Color:
+                                            rgba:1,1,1,1
+                                        RoundedRectangle:
+                                            pos:self.pos
+                                            size:self.size
+                                            radius:[20]
+                                            texture:Gradient.horizontal(utils.get_color_from_hex("#0f1024"),utils.get_color_from_hex("#2a2a5a"),utils.get_color_from_hex("#6b5b95"))
+
+
+                Label:
+                    id:line
+                    size_hint_y: None
+                    height: self.texture_size[1]   # Gives extra padding for the line
+                    canvas.after:
+                        Color:
+                            rgba: root.line_container_color  # White line
+                        Line:
+                            points: [content_container.x, self.y, content_container.x + content_container.width, self.y]
+                            width: 1  # Thickness of the line
+
+                # Icon
+                MDBoxLayout:
+                    orientation: "horizontal"
+                    size_hint_x:None
+                    size_hint_y: None
+                    width:"150dp"
+                    height: "30dp"
+                    spacing: "8dp"
+                    pos_hint:{"center_x":0.18}
+
+                    MDBoxLayout:
+                        size_hint: None, None
+                        size: "40dp", "40dp"
+                        pos_hint: {"center_x": 0.5,"center_y":0.5}
+
+                        canvas.before:
+                            Color:
+                                rgba: root.palette_container_color
+                            RoundedRectangle:
+                                pos: self.pos
+                                size: self.size
+                                radius: [30,30,30,30]
+
+                        MDIcon:
+                            id:dark_icon
+                            icon: "weather-night"
+                            style:"standard"
+                            theme_font_size: "Custom"
+                            font_size: "24sp"
+
+                            theme_icon_color: "Custom"
+                            icon_color: 0, 0, 0, 1
+                            pos_hint:{"center_y":0.5}
+                            padding:[10,0,0,0]
+
+
+                    MDBoxLayout:
+                        orientation:"vertical"
+                        size_hint_x:None
+                        size_hint_y: None
+                        width:"150dp"
+                        height:"40dp"
+                        #spacing: "8dp"
+                        #padding:[0,"5dp",0,0,]
+                        pos_hint:{"center_x":0.5,"center_y":0.5}
+
+                        MDLabel:
+                            id:dark_label
+                            text: "Dark Mode"
+                            font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                            font_style:"Title"
+                            role:"medium"
+                            color: 0,0,0,1
+                            font_size: "18sp"
+                            text_size: self.size
+                            halign: "left"
+                            valign:"top"
+
+
+                        MDLabel:
+                            id:sub_labels
+                            text: "Off -- Bright, daytime interface"
+                            text_color:0.5, 0.5, 0.5, 1.0
+                            font_name:"NotoSans"
+                            font_size:"13sp"
+                            font_style: "Label"
+                            role:"small"
+                            text_size: self.size
+                            halign: "left"
+                            valign:"bottom"
+
+                    FloatLayout:
+                        size_hint: None,None
+                        size: "250dp", "40dp"
+
+                        MDSwitch:
+                            id:dark_switch
+                            size_hint: None, None
+                            size: "50dp", "30dp"
+
+                            active: False
+
+                            theme_thumb_color: "Custom"
+                            thumb_color: 1, 1, 1, 1
+
+                            theme_track_color: "Custom"
+                            track_color: 0.541, 0.420, 0.769, 1.0
+                            pos_hint:{"center_x":0.8,"center_y": 0.35}
+                            on_active:root.dark_mode()        #root.background_theme("midnight") if dark_switch.active==True else root.background_theme("dawn")
+
+
+                Label:
+                    id:line
+                    size_hint_y: None
+                    height: self.texture_size[1] + dp(13)  # Gives extra padding for the line
+                    canvas.after:
+                        Color:
+                            rgba: root.line_container_color  # White line
+                        Line:
+                            points: [content_container.x, self.y, content_container.x + content_container.width, self.y]
+                            width: 1  # Thickness of the line
+
+                ################################################
+                # Icon
+                MDBoxLayout:
+                    id:language_parent
+                    orientation: "horizontal"
+                    size_hint_x:None
+                    size_hint_y: None
+                    width:"150dp"
+                    height: "30dp"
+                    spacing: "8dp"
+                    pos_hint:{"center_x":0.18,"top":0.8}
+
+                    MDBoxLayout:
+                        size_hint: None, None
+                        size: "40dp", "40dp"
+                        pos_hint: {"center_x": 0.5,"center_y":0.5}
+
+                        canvas.before:
+                            Color:
+                                rgba: root.palette_container_color
+                            RoundedRectangle:
+                                pos: self.pos
+                                size: self.size
+                                radius: [30,30,30,30]
+
+                        MDIcon:
+                            id:translate_icon
+                            icon: "translate"
+                            style:"standard"
+                            theme_font_size: "Custom"
+                            font_size: "24sp"
+
+                            theme_icon_color: "Custom"
+                            icon_color: 0, 0, 0, 1
+                            pos_hint:{"center_y":0.5}
+                            padding:[10,0,0,0]
+
+
+                    MDBoxLayout:
+                        orientation:"vertical"
+                        size_hint_x:None
+                        size_hint_y: None
+                        width:"150dp"
+                        height:"40dp"
+
+                        #padding:[0,"2dp",0,0,]
+                        pos_hint:{"center_x":0.5,"center_y":0.5}
+
+                        MDLabel:
+                            id:language_text
+                            text: "Language"
+                            font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                            font_style:"Title"
+                            role:"medium"
+                            color: 0,0,0,1
+                            font_size: "18sp"
+                            text_size: self.size
+                            halign: "left"
+                            valign:"top"
+
+
+                        MDLabel:
+                            id:language_label
+                            text: "English"
+                            text_color:0.5, 0.5, 0.5, 1.0
+                            font_name:"NotoSans"
+                            font_size:"13sp"
+                            font_style: "Label"
+                            role:"small"
+                            text_size: self.size
+                            halign: "left"
+                            valign:"bottom"
+
+                    FloatLayout:
+                        id:float
+                        size_hint: None,None
+                        width:"250dp"
+                        height:"30dp"
+
+
+                        MDButton:
+                            id:language_change
+                            style:"outlined"
+                            size_hint_x:None
+                            size_hint_y:None
+                            height:"30dp"
+                            width:"30dp"
+                            radius:[dp(15),dp(15),dp(15),dp(15)]
+                            theme_line_color:"Custom"
+                            line_color:1,1,1,0.10
+                            theme_bg_color:"Custom"
+                            md_bg_color:1,1,1,1
+                            pos_hint:{"center_x":0.7,"top":0.9}
+                            on_release:root.toggle_language()
+
+                            MDButtonText:
+                                id:change_text
+                                text:"Change"
+                                font_name:"NotoSans"
+                                theme_color:"Custom"
+                                color:0,0,0,1
+                                pos_hint:{"center_x":0.5,"center_y":0.5}
+                            MDButtonIcon:
+                                id:arrow_icon
+                                icon:"chevron-right"
+                                theme_icon_color: "Custom"
+                                icon_color: 0,0,0,1
+                                pos_hint:{"center_x":0.8,"center_y":0.5}
+
+                # Language options
+                MDBoxLayout:
+                    id: language_options
+                    orientation:"horizontal"
+                    size_hint: None, None
+                    width:"100dp"
+                    height:"0dp"
+                    #pos_hint:{"center_x":0.18, "top": 0.8}
+                    spacing: dp(5)
+                    padding: dp(5),0
+                    opacity: 0
+                    disabled: True
+
+                    # English
+                    MDButton:
+                        id:english_button
+                        style: "text"
+                        size_hint: None,None
+                        size:dp(70),dp(35)
+
+
+
+                        on_release:
+                            root.select_language("English")
+
+                        MDButtonText:
+                            id:english_text
+                            text: "English"
+                            font_name: "NotoSans"
+
+
+                     # Hindi
+                    MDButton:
+                        id:hindi_button
+                        style: "text"
+                        font_name: "NotoSans"
+                        size_hint: None,None
+                        size: dp(65),dp(35)
+
+
+                        on_release:
+                            root.select_language("Hindi")
+
+                        MDButtonText:
+                            id:hindi_text
+                            text: "Hindi"
+                            font_name: "NotoSans"
+
+                    # French
+                    MDButton:
+                        id:french_button
+                        style: "text"
+
+                        size_hint: None,None
+                        size: dp(70),dp(35)
+
+
+                        on_release:
+                            root.select_language("French")
+
+                        MDButtonText:
+                            id:french_text
+                            text: "French"
+                            font_name: "NotoSans"
+
+                    # Chinese
+                    MDButton:
+                        id:chinese_button
+                        style: "text"
+
+                        size_hint: None,None
+                        size: dp(75),dp(35)
+
+
+                        on_release:
+                            root.select_language("Chinese")
+
+                        MDButtonText:
+                            id:chinese_text
+                            text: "Chinese"
+                            font_name: "NotoSans"
+
+
+
+                Label:
+                    id:line
+                    size_hint_y: None
+                    height: self.texture_size[1] + dp(10)  # Gives extra padding for the line
+                    canvas.after:
+                        Color:
+                            rgba: root.line_container_color  # White line
+                        Line:
+                            points: [content_container.x, self.y, content_container.x + content_container.width, self.y]
+                            width: 1  # Thickness of the line
+
+                #################################################
+                MDBoxLayout:
+                    id:font_parent
+                    orientation: "horizontal"
+                    size_hint_x:None
+                    size_hint_y: None
+                    width:"150dp"
+                    height: "60dp"
+                    spacing: "8dp"
+                    pos_hint:{"center_x":0.18,"top":0.8}
+
+                    MDBoxLayout:
+                        size_hint: None, None
+                        size: "40dp", "40dp"
+                        pos_hint: {"center_x": 0.5,"center_y":0.65}
+
+                        canvas.before:
+                            Color:
+                                rgba: root.palette_container_color
+                            RoundedRectangle:
+                                pos: self.pos
+                                size: self.size
+                                radius: [30,30,30,30]
+
+                        MDIcon:
+                            id:font_icon
+                            icon: "format-text"
+                            style:"standard"
+                            theme_font_size: "Custom"
+                            font_size: "24sp"
+
+                            theme_icon_color: "Custom"
+                            icon_color: 0, 0, 0, 1
+                            pos_hint:{"center_y":0.5}
+                            padding:[10,0,0,0]
+
+
+                    MDBoxLayout:
+                        orientation:"vertical"
+                        size_hint_x:None
+                        size_hint_y: None
+                        width:"450dp"
+                        height:"60dp"
+                        pos_hint:{"center_x":0.5,"center_y":0.5}
+
+                        MDLabel:
+                            id:font_size
+                            text: "Font Size"
+                            font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                            font_style:"Title"
+                            role:"medium"
+                            color: 0,0,0,1
+                            font_size: "18sp"
+                            text_size: self.size
+                            halign: "left"
+                            valign:"top"
+
+
+                        MDLabel:
+                            id:font_label
+                            text:"16 px"
+                            text_color:0.5, 0.5, 0.5, 1.0
+                            font_name:"NotoSans"
+                            font_size:"13sp"
+                            font_style: "Label"
+                            role:"small"
+                            text_size: self.size
+                            halign: "left"
+                            valign:"bottom"
+
+                        MDRelativeLayout:
+
+                            size_hint:1,1
+
+
+                            Slider:
+                                id: font_slider
+
+                                min: 12
+                                max: 22
+                                value: 16
+                                step: 1
+
+                                size_hint_x: 0.9
+                                size_hint_y: None
+                                height: dp(40)
+                                pos_hint: {"center_x": 0.35,"center_y":0.45}
+
+                                cursor_size: 0,0
+                                on_value:
+                                    font_label.text= str(int(self.value)) + " px"
+                                #    root.update_font_preview(self,self.value)
+                                canvas:
+                                    # Hide the default Kivy slider track
+                                    Color:
+                                        rgba: 0, 0, 0, 0
+
+                                    Rectangle:
+                                        pos: self.pos
+                                        size: self.size
+                                canvas.after:
+                                    Color:
+                                        rgba: 0.75, 0.75, 0.75, 1
+                                    RoundedRectangle:
+                                        pos: self.x, self.center_y - dp(3)
+                                        size: self.width , dp(6)
+                                        radius: [dp(3),dp(3)]
+
+                                    Color:
+                                        rgba: root.track_container_color
+                                    RoundedRectangle:
+                                        pos: self.x, self.center_y - dp(3)
+                                        size:
+                                            dp(15) / 2 + \
+                                            self.value_normalized * (self.width - dp(15)), dp(6)
+                                        radius: [dp(3), dp(3)]
+
+
+                                    Color:
+                                        rgba: root.track_container_color
+
+                                    Ellipse:
+                                        size: dp(15), dp(15)
+                                        pos:
+                                            self.x +\
+                                            self.value_normalized * (self.width - dp(15)), \
+
+                                            self.center_y - dp(7.5)
+
+                            MDBoxLayout:
+                                orientation: "horizontal"
+                                size_hint_x: 0.9
+                                size_hint_y: None
+                                height: dp(60)
+                                # Put the box below the slider
+                                y: font_slider.y - self.height - dp(10)
+
+                                padding: dp(15), dp(8)
+                                spacing: dp(10)
+                                pos_hint:{"center_x":0.35}
+                                canvas.before:
+                                    Color:
+                                        rgba: root.line_container_color
+                                    RoundedRectangle:
+                                        pos: self.pos
+                                        size: self.size
+                                        radius: [dp(14), dp(14), dp(14), dp(14)]
+                                    Color:
+                                        rgba:root.line_container_color
+                                    Line:
+                                        rounded_rectangle:
+                                            (self.x,self.y,self.width,self.height,14)
+
+                                # LEFT SIDE
+                                MDLabel:
+                                    id:preview_label
+                                    text: "PREVIEW"
+                                    size_hint_x:0.2
+                                    halign: "left"
+                                    valign: "center"
+                                    font_size: "10sp"
+                                    theme_text_color: "Custom"
+                                    text_color: 0.3, 0.3, 0.3, 1
+
+                                # RIGHT SIDE
+                                MDLabel:
+                                    id:preview_text
+                                    id: preview_text
+                                    text: "This is a text preview"
+                                    font_size:f"{font_slider.value}sp"
+                                    size_hint_x: 0.65
+                                    halign: "right"
+                                    valign: "center"
+                                    text_size: self.size
+                                    theme_text_color: "Custom"
+                                    text_color: 0, 0, 0, 1
+
+                Widget:
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: "50dp"
+                    spacing: 20
+
+                    Button:
+                        id:restore
+                        text:"Restore Default"
+                        font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                        background_normal: ""
+                        background_color: .7,.2,.2,1
+
+                        on_release:
+                            root.restore_default()
+
+                    Button:
+                        id:save
+                        text: "Save Settings"
+                        #font_name:"fonts/Noto_Sans/NotoSans-VariableFont.ttf"
+                        font_name:"NotoSansDevanagari"
+                        background_normal: ""
+                        background_color: .15,.55,1,1
+
+                        on_release:
+                            root.background_theme("dawn") if root.selected_theme=="dawn" else root.background_theme("midnight")
+                            root.save_settings()
 
 <HistoryScreen>:
 
@@ -3705,9 +4433,10 @@ WindowManager:
                 pos: self.pos
                 size: self.size
 
-        Button:
+        HoverButton:
             background_normal:"image/arrow_back.png"
             background_down:"image/arrow_back.png"
+            background_color: (0.27, 0.51, 0.71, 1) if self.state == "down" else (1,1,1,1)
             size_hint:None,None
             size:40,40
             pos_hint:{"center_y":0.96,"center_x":0.05}
@@ -3817,10 +4546,11 @@ WindowManager:
                     points: [self.right, self.y, self.right, self.top]
                     width: 1
 
-            Button:
+            HoverButton:
                 id:back
                 background_normal:"image/arrow_back.png"
                 background_down:"image/arrow_back.png"
+                background_color: (0.27, 0.51, 0.71, 1) if self.state == "down" else (1,1,1,1)
                 size_hint:None,None
                 size:40,40
                 pos_hint:{"center_x":0.5}
