@@ -4,13 +4,18 @@ import random
 import shutil
 import smtplib
 import sqlite3
-# import pywhatkit
 import subprocess
 import sys
 import threading
 import time
 import winreg
+import hmac
+import hashlib
 
+from asynckivy import fade_transition
+from docutils.utils.math.latex2mathml import letters
+from dotenv import load_dotenv
+from kivy.uix.textinput import TextInput
 from kivy.core.audio import SoundLoader
 from plyer import notification
 
@@ -36,19 +41,21 @@ from kivy.core.window import Window
 from kivy.event import EventDispatcher
 from kivy.factory import Factory
 from kivy.lang import Builder
-from kivy.metrics import sp
-from kivy.properties import StringProperty, ListProperty, ColorProperty
+from kivy.metrics import sp,dp
+from kivy.properties import StringProperty, ListProperty, ColorProperty, BooleanProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 # from kivy.uix.popup import Popup
 # from kivy.uix.label import Label
-from kivy.uix.screenmanager import ScreenManager, Screen
+from kivy.uix.screenmanager import ScreenManager, Screen, NoTransition, FadeTransition, SwapTransition, SlideTransition, \
+    WipeTransition
 from kivymd.app import MDApp
 from kivymd.uix.button import MDButton, MDButtonText
 from kivymd.uix.dialog import MDDialog, MDDialogHeadlineText, MDDialogSupportingText, MDDialogButtonContainer
 from kivymd.uix.pickers import MDTimePickerDialHorizontal, MDModalDatePicker
 from kivymd.uix.widget import MDWidget
 from pystray import MenuItem as Item
+from streamlit.cli_util import open_browser
 
 from languages import LANGUAGES
 
@@ -60,8 +67,12 @@ current_user={
     "email":"",
     "phone":"",
 }
-
+Window.fullscreen = False
+Window.resizable = True
 Window.size=(780,750)
+Window.minimum_width = 780
+Window.minimum_height = 750
+
 
 LabelBase.register(name="RobotoFlex",
                    fn_regular="fonts/Roboto_Flex/RobotoFlex-VariableFont.ttf")
@@ -75,93 +86,103 @@ LabelBase.register(name="NotoSansDevanagari",
                    fn_regular="fonts/Noto_Sans_Devanagari/NotoSansDevanagari-VariableFont.ttf")
 
 # ==================Database=========================
-conn = sqlite3.connect('user.db')
-cursor = conn.cursor()
 
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS users(
-id INTEGER PRIMARY KEY AUTOINCREMENT,
-name TEXT,
-email TEXT UNIQUE,
-phone TEXT,
-password TEXT
-google_password TEXT
-)
-""")
+def initialize_database():
 
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS wishes(
-id INTEGER PRIMARY KEY AUTOINCREMENT,
-name TEXT,
-phone TEXT,
-recipient_email TEXT,
-message TEXT,
-subject TEXT,
-date TEXT,
-time TEXT,
-Platform TEXT,
-sent INTEGER DEFAULT 0,
-status TEXT,
-reminder_sent INTEGER DEFAULT 0
-)
-""")
-conn.commit()
+    conn = sqlite3.connect('user.db')
+    cursor = conn.cursor()
 
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS gmail_tokens (
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS users(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_email TEXT UNIQUE,
-    token TEXT,
-    refresh_token TEXT,
-    token_uri TEXT,
-    client_id TEXT,
-    client_secret TEXT,
-    scopes TEXT,
-    expiry TEXT
-)
-""")
+    name TEXT,
+    email TEXT UNIQUE,
+    phone TEXT,
+    password TEXT,
+    email_verification TEXT,
+    phone_verification TEXT
+    )
+    """)
 
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS personalize(
-user_id INTEGER PRIMARY KEY,
-theme TEXT,
-language TEXT,
-font_size INTEGER,
-accent_color TEXT
-)"""
-)
-conn.commit()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS login_session (
+            id INTEGER PRIMARY KEY,
+            user_id INTEGER,
+            is_logged_in INTEGER DEFAULT 0
+        )
+    """)
 
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS advanced_settings(
-id INTEGER PRIMARY KEY AUTOINCREMENT,
-scheduler_status TEXT,
-scheduler_interval TEXT
-)""")
-conn.commit()
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS wishes(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    name TEXT,
+    phone TEXT,
+    recipient_email TEXT,
+    message TEXT,
+    subject TEXT,
+    date TEXT,
+    time TEXT,
+    Platform TEXT,
+    sent INTEGER DEFAULT 0,
+    status TEXT,
+    reminder_sent INTEGER DEFAULT 0
+    )
+    """)
 
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS general_settings(
-    id INTEGER PRIMARY KEY,
-    launch_startup INTEGER DEFAULT 0,
-    minimize_tray INTEGER DEFAULT 0,
-    auto_scheduler INTEGER DEFAULT 1,
-    time_format TEXT DEFAULT '12-Hour',
-    date_format TEXT DEFAULT 'DD/MM/YYYY',
-    time_zone TEXT DEFAULT 'Asia/Kolkata'
-)
-""")
-conn.commit()
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS gmail_tokens (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_email TEXT UNIQUE,
+        token TEXT,
+        refresh_token TEXT,
+        token_uri TEXT,
+        client_id TEXT,
+        client_secret TEXT,
+        scopes TEXT,
+        expiry TEXT
+    )
+    """)
 
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS notification_settings(
-    id INTEGER PRIMARY KEY,
-    enable_notification INTEGER DEFAULT 1,
-    sound INTEGER DEFAULT 1,
-    reminder TEXT
-)
-""")
-conn.commit()
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS personalize(
+    user_id INTEGER PRIMARY KEY,
+    theme TEXT,
+    language TEXT,
+    font_size INTEGER,
+    accent_color TEXT
+    )"""
+    )
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS advanced_settings(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    scheduler_status TEXT,
+    scheduler_interval TEXT
+    )""")
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS general_settings(
+        id INTEGER PRIMARY KEY,
+        launch_startup INTEGER DEFAULT 0,
+        minimize_tray INTEGER DEFAULT 0,
+        auto_scheduler INTEGER DEFAULT 1,
+        time_format TEXT DEFAULT '12-Hour',
+        date_format TEXT DEFAULT 'DD/MM/YYYY',
+        time_zone TEXT DEFAULT 'Asia/Kolkata'
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS notification_settings(
+        id INTEGER PRIMARY KEY,
+        enable_notification INTEGER DEFAULT 1,
+        sound INTEGER DEFAULT 1,
+        reminder TEXT
+    )
+    """)
+    conn.commit()
+    conn.close()
 
 def show_popup(title, message):
 
@@ -169,7 +190,10 @@ def show_popup(title, message):
 
     ok_button = MDButton(
         style="text",
-        pos_hint={"center_x":0.5, "center_y":0.5},
+        pos_hint={"center_x":0.5},
+        theme_width="Custom",
+        size_hint_x=None,
+        width="70dp"
     )
 
     ok_button.add_widget(
@@ -196,8 +220,11 @@ def show_popup(title, message):
         ),
 
         MDDialogButtonContainer(
+            MDWidget(),
             ok_button,
-            spacing="0dp"
+            MDWidget(),
+            spacing="0dp",
+
         ),
 
         md_bg_color=(1, 1, 1, 1),
@@ -210,16 +237,32 @@ def show_popup(title, message):
     dialog.open()
 
 class HoverButton(Button):
-    hovered=False
+    hovered=BooleanProperty(False)
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-
         Window.bind(mouse_pos=self.on_mouse_pos)
+
+    def get_screen(self):
+        widget=self.parent
+        while widget is not None:
+            if isinstance(widget,Screen):
+                return widget
+            widget=widget.parent
+        return None
 
     def on_mouse_pos(self,*args):
 
         if not self.get_root_window():
             return
+
+        screen = self.get_screen()
+
+        # Do not react while this button's screen is inactive
+        if screen and screen.manager:
+            if screen.manager.current!=screen.name:
+                self.reset_hover()
+                return
+
 
         pos=args[1]
         inside = self.collide_point(
@@ -236,72 +279,147 @@ class HoverButton(Button):
         else:
             Window.set_system_cursor("arrow")
 
+    def reset_hover(self):
+        self.hovered = False
+        Window.set_system_cursor("arrow")
+
+    def on_parent(self,instance,parent):
+        if parent is None:
+            Window.unbind(mouse_pos=self.on_mouse_pos)
+            self.reset_hover()
+
 
 class FlashScreen(Screen):
     def __init__(self,**kwargs):
-        super().__init__()
+        super().__init__(**kwargs)
         self.loading_event = None
 
     def on_enter(self,*args):
-        self.ids.loading_bar.value = 0
+        Clock.schedule_once(
+            self.initialize_flash_screen,
+            0
+        )
+
+    def initialize_flash_screen(self,dt):
+        self.background_animate()
+        self.ids.progress_bar.value = 0
 
         self.loading_event = Clock.schedule_interval(
             self.update_loading,
             0.05
         )
 
-        self.animate_logo()
-        self.splash_label_animate()
+    def background_animate(self):
+        background_logo = self.ids.background_logo
+        Animation.cancel_all(background_logo)
+        background_logo.opacity = 0
+        anim=(Animation(
+            opacity=1,
+            duration=0.8,
+            t="out_quad"
+
+        ))
+        anim.bind(
+            on_complete=lambda *args:self.animate_logo()
+        )
+
+        anim.start(background_logo)
 
     def animate_logo(self):
         splash_logo = self.ids.splash_logo
+        Animation.cancel_all(splash_logo)
         splash_logo.opacity = 0
-        splash_logo.scale = 0.8
-        Animation(
+        anim=Animation(
             opacity=1,
-            duration=1,
-            t="out_back"
+            duration=1.5,
+            t="out_quad"
 
-        ).start(splash_logo)
+        )
+        anim.bind(on_complete=lambda *args:self.splash_label_animate())
+        anim.start(splash_logo)
+
 
     def splash_label_animate(self):
-        splash_label=self.ids.splash_label
-        splash_label.opacity=0
-        splash_label.font_size=sp(30)
-        Animation.cancel_all(splash_label)
-        (
-            Animation(
-                opacity=1,
-                font_size=sp(60),
-                duration=1.2,
-                t="out_back"
-            )+
-            Animation(
-                duration=1,
-                font_size=sp(50),
-                t="in_out_quad"
 
-            )
-        ).start(splash_label)
-        # Clock.schedule_once(
-        # self.goto_login,
-        #     5
-        # )
+        w=self.ids.letter_w
+        letters=[
+            self.ids.letter_i,
+            self.ids.letter_s,
+            self.ids.letter_h,
+            self.ids.letter_e,
+            self.ids.letter_r
+        ]
+
+        # Final positions
+        final_positions = [
+            dp(115),  # i
+            dp(140),  # s
+            dp(165),  # h
+            dp(190),  # e
+            dp(215)  # r
+        ]
+
+        # W final position
+        final_w_x = dp(85)
+
+        # -----------------------------
+        # W starts slightly to right
+        # -----------------------------
+        start_w_x = dp(105)
+        # reset W
+        Animation.cancel_all(w)
+        w.opacity = 1
+        w.x=start_w_x
+
+        # All other letters start exactly behind W
+        for letter in letters:
+            Animation.cancel_all(letter)
+            letter.opacity = 0
+            letter.x=start_w_x
+
+        # Move W slightly left while first letter comes out
+        delay = 0
+        for letter, final_x in zip(letters, final_positions):
+            def animate_letter(dt, widget=letter, x=final_x):
+                # Move W left
+                Animation(
+                    x=final_w_x,
+                    duration=0.5,
+                    t="out_cubic"
+                ).start(w)
+
+                # Bring letter out from behind W
+                Animation(
+                    x=x,
+                    opacity=1,
+                    duration=0.5,
+                    t="out_cubic"
+                ).start(widget)
+
+            Clock.schedule_once(animate_letter, delay)
+
+            delay += 0.25
+
+
 
     def update_loading(self, _dt):
-        self.ids.loading_bar.value += 1
 
-        if self.ids.loading_bar.value >= 100:
+        self.ids.progress_bar.value += 1
+
+        if self.ids.progress_bar.value >= self.ids.progress_bar.max:
             self.loading_event.cancel()
-            self.manager.current = "login"
+            app=App.get_running_app()
+            if app.restore_login():
+                self.manager.current = "home"
+            else:
+                self.manager.current = "login"
+
             return False
 
         return True
 
-    # def goto_login(self,_dt):
-    #    self.manager.current="login"
-
 class LoginScreen(Screen):
+
     def toggle_password(self):
         password_field=self.ids.login_password
         visibility_btn=self.ids.visibility_btn
@@ -315,6 +433,10 @@ class LoginScreen(Screen):
             visibility_btn.background_down="image/visibility_on_30.png"
 
     def signin_user(self):
+        conn1=sqlite3.connect("user.db")
+        cursor1=conn1.cursor()
+
+        personalize = self.manager.get_screen("personalize")
         global current_user
         email=self.ids.login_email.text
         phone=self.ids.login_email.text
@@ -325,27 +447,40 @@ class LoginScreen(Screen):
             return
 
         # Database Check
-        cursor.execute("SELECT * FROM users WHERE email=? or phone=? or password=?",(email,phone,password))
-        user = cursor.fetchone()
+        cursor1.execute("SELECT * FROM users WHERE email=? or phone=?",(email,phone))
+        user = cursor1.fetchone()
+
+
+        if user is None:
+            show_popup(title="error",message="User does not exist. Please Sign Up")
+            return
 
         # check password
-        #stored_password=user[4]
-
-        if user and password==user[4] :
-            print("Login Successful")
-            current_user["id"]=user[0]
-            current_user["email"]=user[2]
-            current_user["phone"]=user[3]
-            current_user["name"]=user[1]
-            self.manager.current = "welcome"
-            self.ids.login_email.text = ""
-            self.ids.login_password.text = ""
-        if user is None:
-            show_popup(title="error",message="User does not exist. Please SignUp")
-            return
         if password != user[4]:
             show_popup(title="error",message="Password is Wrong")
             return
+        print("Login Successful")
+        current_user["id"]=user[0]
+        current_user["email"]=user[2]
+        current_user["phone"]=user[3]
+        current_user["name"]=user[1]
+
+        conn22=sqlite3.connect("user.db")
+        cursor22=conn22.cursor()
+        cursor22.execute("""
+            INSERT OR REPLACE INTO login_session
+            (id, user_id, is_logged_in)
+            VALUES (1, ?, 1)
+        """, (current_user["id"],))
+
+        conn22.commit()
+        conn22.close()
+
+        self.ids.login_email.text = ""
+        self.ids.login_password.text = ""
+        self.manager.current = "welcome"
+        personalize.load_settings()
+
 
 
     def start_google_login(self):
@@ -355,9 +490,6 @@ class LoginScreen(Screen):
         ).start()
 
     def google_signin(self):
-        # webbrowser.open(
-        #     "https://accounts.google.com/signin"
-        # )
         global current_user
         try:
             conn2=sqlite3.connect("user.db")
@@ -372,6 +504,14 @@ class LoginScreen(Screen):
                                                            )
             creds=flow.run_local_server(port=0)
             if not creds:
+                conn2.close()
+                Clock.schedule_once(
+                    lambda dt:setattr(
+                        self.manager,
+                        "current",
+                        "login"
+                    )
+                )
                 return
 
             id_info = id_token.verify_oauth2_token(
@@ -400,7 +540,7 @@ class LoginScreen(Screen):
             cursor2.execute("SELECT * FROM users WHERE email=?",(email,)
                            )
             user = cursor2.fetchone()
-            # current_user["id"] = existing_user[0]
+
             if user is None:
                 cursor2.execute("""
                                 INSERT INTO users(name, email, phone, password) VALUES(?,?,?,?)""",
@@ -427,6 +567,16 @@ class LoginScreen(Screen):
             conn2.close()
 
             print("Google Login Successful")
+            conn24 = sqlite3.connect("user.db")
+            cursor24 = conn24.cursor()
+            cursor24.execute("""
+                        INSERT OR REPLACE INTO login_session
+                        (id, user_id, is_logged_in)
+                        VALUES (1, ?, 1)
+                    """, (current_user["id"],))
+
+            conn24.commit()
+            conn24.close()
             Clock.schedule_once(
                 lambda dt: setattr(
                     self.manager,
@@ -437,8 +587,6 @@ class LoginScreen(Screen):
 
         except Exception as e:
             print("Google Login Cancelled or Failed",e)
-            # stay on login screen
-            self.manager.current = "login"
 
 
 
@@ -457,6 +605,9 @@ class SignUpScreen(Screen):
             visibility_btn.background_down="image/visibility_on_30.png"
 
     def signup_user(self):
+        conn1=sqlite3.connect("user.db")
+        cursor1=conn1.cursor()
+
         name=self.ids.signup_name.text
         email=self.ids.signup_email.text.strip().lower()
         phone=self.ids.signup_phone.text
@@ -466,8 +617,8 @@ class SignUpScreen(Screen):
             show_popup(title="required",message="Please fill all fields")
             return
 
-        cursor.execute("SELECT * FROM users WHERE email=?",(email,))
-        existing = cursor.fetchone()
+        cursor1.execute("SELECT * FROM users WHERE email=?",(email,))
+        existing = cursor1.fetchone()
         if existing:
             show_popup(title="",message="Email already exists")
             self.ids.signup_name.text = ""
@@ -475,10 +626,10 @@ class SignUpScreen(Screen):
             self.ids.signup_phone.text = ""
             self.ids.signup_password.text = ""
         else:
-            (cursor.execute
+            (cursor1.execute
              ("INSERT INTO users (name, email, phone, password) VALUES(?,?,?,?)",(name,email,phone,password)
                 ))
-            conn.commit()
+            conn1.commit()
             show_popup(title="",message="Signup Successful")
             self.manager.current = "login"
             self.ids.signup_name.text = ""
@@ -664,6 +815,8 @@ class ForgotPasswordScreen(Screen):
 
 
     def reset_password(self):
+        conn=sqlite3.connect("user.db")
+        cursor=conn.cursor()
 
         email = self.ids.fp_email.text.strip()
         new_password = self.ids.new_password.text.strip()
@@ -693,6 +846,32 @@ class ForgotPasswordScreen(Screen):
         self.ids.new_password.text=""
         self.ids.otp_input.text=""
 
+class DateTextInput(TextInput):
+
+    def on_touch_down(self, touch):
+        if self.collide_point(*touch.pos):
+            app = App.get_running_app()
+            screen = app.root.get_screen("add_wish")
+
+            screen.date_picker()
+
+            return True
+
+        return super().on_touch_down(touch)
+
+class TimeTextInput(TextInput):
+
+    def on_touch_down(self, touch):
+        if self.collide_point(*touch.pos):
+            app = App.get_running_app()
+            screen = app.root.get_screen("add_wish")
+
+            screen.time_picker()
+
+            return True
+
+        return super().on_touch_down(touch)
+
 class AddWishScreen(Screen):
 
     selected_platforms = StringProperty("")
@@ -708,9 +887,9 @@ class AddWishScreen(Screen):
         self.ids.setting.text = t("Settings")
         self.ids.logout.text = t("Logout")
 
-    def __init__(self, **kw):
-        super().__init__(**kw)
-        self.open_menu = None
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.open_menu = False
         self.dialog = None
 
     def open_platform_dialog(self):
@@ -752,25 +931,154 @@ class AddWishScreen(Screen):
 
         cancel_btn.bind(
             on_release=lambda x: self.dialog.dismiss()
+
         )
+        # self.dialog.bind(
+        #     on_dismiss=self.platform_dialog_dismissed
+        # )
 
         self.dialog.open()
+        #self.ids.arrow_image.icon="chevron-up"
 
+    def platform_dialog_dismissed(self,*args):
+        self.ids.arrow_image.icon="chevron-down"
+
+    def on_enter(self):
+        self.check_gmail_connection()
+        self.reset_hover_buttons()
+
+    def on_leave(self, *args):
+        self.reset_hover_buttons()
+
+    def reset_hover_buttons(self):
+        for widget in self.walk():
+            if isinstance(widget, HoverButton):
+                widget.reset_hover()
+
+    def check_gmail_connection(self):
+
+        user_email = current_user["email"]
+
+        conn20 = sqlite3.connect("user.db")
+        cursor20 = conn20.cursor()
+
+        cursor20.execute("""
+            SELECT 1
+            FROM gmail_tokens
+            WHERE user_email = ?
+            LIMIT 1
+        """, (user_email,))
+
+        row = cursor20.fetchone()
+
+        conn20.close()
+
+        if row:
+            self.ids.gmail_btn.text = "Gmail Connected"
+            self.ids.gmail_btn.disabled = True
+        else:
+            self.ids.gmail_btn.text = "Connect Gmail"
+            self.ids.gmail_btn.disabled = False
 
     def connect_gmail(self):
-        gmail_btn=self.ids.gmail_btn
         user_email = current_user["email"]
-        save_credentials(user_email)
-        gmail_btn.text="Gmail Connected"
+        conn20=sqlite3.connect("user.db")
+        cursor20=conn20.cursor()
+        cursor20.execute(
+            "SELECT * FROM gmail_tokens WHERE user_email=?",(user_email,)
+        )
+        row=cursor20.fetchone()
+
+        conn20.close()
+        gmail_btn=self.ids.gmail_btn
+        if row is not None:
+            # gmail already connected
+            gmail_btn.text="Gmail Connected"
+            gmail_btn.disabled = True
+            return
         gmail_btn.disabled = True
-        
-    def email_checkbox(self):
-        check_box=self.ids.email_cb
-        # email_btn=self.ids.email_btn.text
-        check_box.active=not check_box.active
-        if check_box.active:
-            user_email=current_user["email"]
-            save_credentials(user_email)
+        gmail_btn.text = "Connecting..."
+
+        # Run Oauth in background thread
+        thread=threading.Thread(target=self.gmail_oauth_thread, args=(user_email,),daemon=True).start()
+        # Watchdog: reset UI if OAuth doesn't finish
+        # self._gmail_timeout_event = Clock.schedule_once(
+        #     self.gmail_connection_timeout,
+        #     5
+        # )
+
+    def gmail_oauth_thread(self,user_email):
+        success=save_credentials(user_email)
+        # Return to kivy main thread
+        Clock.schedule_once(
+            lambda dt:self.gmail_oauth_finished(success),
+            0
+        )
+
+    def gmail_oauth_finished(self,success):
+
+        # Cancel watchdog
+        # if hasattr(self, "_gmail_timeout_event"):
+        #     self._gmail_timeout_event.cancel()
+        #     self._gmail_timeout_event = None
+
+        gmail_btn=self.ids.gmail_btn
+        if success:
+            gmail_btn.text = "Gmail Connected"
+            gmail_btn.disabled = True
+            print("Gmail connected successfully")
+        else:
+            gmail_btn.text = "Connect Gmail"
+            gmail_btn.disabled = False
+            show_popup(
+                title="Gmail Connection",message="Gmail connection was cancelled.\n"
+                                                 "Please try again."
+            )
+
+    # def gmail_connection_timeout(self, dt):
+    #
+    #     gmail_btn = self.ids.gmail_btn
+    #
+    #     # Reset button
+    #     gmail_btn.text = "Connect Gmail"
+    #     gmail_btn.disabled = False
+    #
+    #     self._gmail_timeout_event = None
+    #
+    #     show_popup(
+    #         title="Gmail Connection",
+    #         message="Gmail connection was cancelled or timed out.\n"
+    #                 "Please try again."
+    #     )
+
+    def email_checkbox(self,checkbox,active):
+
+        if not active:
+            return
+        user_email=current_user["email"]
+        if not user_email:
+            checkbox.active = False
+            show_popup(
+                title="Gmail Not Connected",
+                message="Gmail Not Connected.\n"
+                        "Please connect your Gmail from side menu."
+            )
+            return
+        conn21=sqlite3.connect("user.db")
+        cursor21=conn21.cursor()
+        cursor21.execute(
+            """SELECT 1 FROM gmail_tokens WHERE user_email=? LIMIT 1""",(user_email,)
+                         )
+        row=cursor21.fetchone()
+        conn21.close()
+        if row is None:
+            checkbox.active=False
+            show_popup(
+                title="",
+                message="Gmail is not connected.\n"
+                       "Please connect your gmail from side menu."
+            )
+            return
 
     def sms_checkbox(self):
         check_box=self.ids.sms_cb
@@ -809,22 +1117,24 @@ class AddWishScreen(Screen):
         picker.bind(on_ok=self.set_date,
                     on_cancel=self.on_date_cancel)
         picker.open()
+
     def set_date(self,instance_date_picker):
         date=instance_date_picker.get_date()
         if date:
             actual_date=date[0]
-            formatted_date=actual_date.strftime("%y-%m-%d")
+            formatted_date=actual_date.strftime("%Y-%m-%d")
             self.ids.wish_date.text=formatted_date
         instance_date_picker.dismiss()
 
-    @staticmethod
-    def on_date_cancel(instance_date_picker):
+    def on_date_cancel(self,instance_date_picker):
         instance_date_picker.dismiss()
+
     def time_picker(self):
         picker=MDTimePickerDialHorizontal()
         picker.bind(on_ok=self.set_time,
                     on_cancel=self.on_time_cancel)
         picker.open()
+
     def set_time(self,instance_time_picker):
         tim=instance_time_picker.time
         if tim:
@@ -833,29 +1143,32 @@ class AddWishScreen(Screen):
             self.ids.wish_time.text=formatted_time
         instance_time_picker.dismiss()
 
-    @staticmethod
-    def on_time_cancel(instance_time_picker):
+    def on_time_cancel(self,instance_time_picker):
         instance_time_picker.dismiss()
 
     def close_side_menu(self):
-        if self.ids.side_panel.opacity==1:
+        if self.open_menu:
             self.side_menu()
 
     def side_menu(self):
         menu_btn=self.ids.menu_btn
         side_panel=self.ids.side_panel
         over_lay=self.ids.overlay
-        # wish_content=self.ids.wish_content
         if not self.open_menu:
-            # side_panel.opacity=1
+            over_lay.disabled = False
+            over_lay.opacity=0
+            over_lay.size_hint_x=1
+            over_lay.size_hint_y=1
             side_panel.disabled = False
-            #over_lay.disabled = False
-            over_lay.size_hint=1,1
-            over_lay.size=Window.size
-            #wish_content.disabled = True
+
+            # Cancel previous animations
+            Animation.cancel_all(over_lay)
+            Animation.cancel_all(side_panel)
+
             Animation(
                 opacity=1,
                 duration=0.25,
+
             ).start(over_lay)
             Animation(
                 opacity=1,
@@ -865,11 +1178,14 @@ class AddWishScreen(Screen):
             ).start(side_panel)
             menu_btn.background_normal="image/close.png"
             menu_btn.background_down="image/close.png"
-
             self.open_menu=True
 
         else:
-            # side_panel.opacity=0
+
+            # Cancel previous animations
+            Animation.cancel_all(over_lay)
+            Animation.cancel_all(side_panel)
+
             Animation(
                 opacity=0,
                 duration=0.25,
@@ -880,19 +1196,20 @@ class AddWishScreen(Screen):
                 duration=0.3,
                 t="in_cubic"
             ).start(side_panel)
-            over_lay.size_hint=None,None
-            over_lay.size=(0,0)
-            # over_lay.disabled = True
+
+            over_lay.disabled = True
+            over_lay.opacity=0
+            over_lay.size_hint_x=0
+            over_lay.size_hint_y=0
             side_panel.disabled = True
-            # wish_content.disabled = False
-            self.open_menu=False
-
-
             menu_btn.background_normal="image/menu.png"
             menu_btn.background_down="image/menu.png"
-
+            self.open_menu=False
 
     def schedule_wish(self):
+        conn=sqlite3.connect("user.db")
+        cursor=conn.cursor()
+
         mode=self.ids.mode.text
         name = self.ids.wish_name.text.strip()
         phone = self.ids.wish_phone.text.strip()
@@ -922,6 +1239,7 @@ class AddWishScreen(Screen):
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS wishes(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id,
         name TEXT,
         phone TEXT,
         recipient_email TEXT,
@@ -936,8 +1254,8 @@ class AddWishScreen(Screen):
         """)
 
         cursor.execute(
-            "INSERT INTO wishes(name,phone,recipient_email,message,subject,date,time,Platform) VALUES(?,?,?,?,?,?,?,?)",
-            (name, phone,recipient_email,message,subject, date, tim, mode)
+            "INSERT INTO wishes(user_id,name,phone,recipient_email,message,subject,date,time,Platform) VALUES(?,?,?,?,?,?,?,?,?)",
+            (current_user["id"],name, phone,recipient_email,message,subject, date, tim, mode)
         )
 
         conn.commit()
@@ -957,28 +1275,47 @@ class AddWishScreen(Screen):
 class WelcomeScreen(Screen):
 
     def on_enter(self,*args):
-        label = self.ids.welcome_label
+        self.reset_hover_buttons()
+        text_image = self.ids.text_image
 
-        # Start invisible
-        label.opacity = 0
-        label.scale=0.5
+        # Cancel any previous scheduled transition
+        if hasattr(self, "_welcome_event") and self._welcome_event:
+            self._welcome_event.cancel()
+            self._welcome_event=None
 
         # Fade in animation
-        anim = Animation(opacity=1,scale=1.2, duration=1) + \
-               Animation(scale=1, duration=0.3)
+        anim = Animation(opacity=1, duration=1.3,t="out_quad")
 
-        anim.start(label)
+        # Cancel previous animation
+        Animation.cancel_all(text_image, "opacity")
 
-        # After 2 seconds → go to Add Wish screen
-        Clock.schedule_once(self.go_next, 2.5)
+        anim.start(text_image)
+
+        # Schedule Only one Transition
+        self._welcome_event=Clock.schedule_once(self.go_next, 2.5)
+
+    def on_leave(self, *args):
+        self.reset_hover_buttons()
+        if hasattr(self,"_welcome_event") and self._welcome_event:
+            self._welcome_event.cancel()
+            self._welcome_event=None
+        Animation.cancel_all(self.ids.text_image, "opacity")
+
+    def reset_hover_buttons(self):
+        for widget in self.walk():
+            if isinstance(widget, HoverButton):
+                widget.reset_hover()
 
     def go_next(self,_dt):
-     self.manager.current = "home"
-
+        self._welcome_event=None
+        app=App.get_running_app()
+        if app.restore_login():
+            self.manager.current = "home"
+        else:
+            self.manager.current = "login"
 
 class ProfileSpinnerOption:
     pass
-
 
 class HomeScreen(Screen):
     profile_bg = ListProperty([0, 0, 0, 0])
@@ -997,7 +1334,25 @@ class HomeScreen(Screen):
     def __init__(self,**kwargs):
         super().__init__(**kwargs)
         self.rect = None
-        self.menu_open = None
+        self.menu_open = False
+
+    def logout(self):
+        conn24 = sqlite3.connect("user.db")
+        cursor24 = conn24.cursor()
+
+        cursor24.execute("""
+                UPDATE login_session
+                SET is_logged_in=0
+                WHERE user_id=?
+            """,(current_user["id"],))
+
+        conn24.commit()
+        # conn24.close()
+
+        # Clear current user
+        current_user.clear()
+
+        self.manager.current = "login"
 
     def close_side_menu(self):
         if self.menu_open:
@@ -1007,17 +1362,12 @@ class HomeScreen(Screen):
         menu_btn=self.ids.menu_btn
         side_panel=self.ids.side_panel
         over_lay=self.ids.overlay
-        # content=self.ids.home_content
-        if side_panel.opacity==0:
-            # side_panel.opacity=1
+
+        if not self.menu_open:
             side_panel.disabled = False
             over_lay.disabled = False
-            # Animation(
-            #     x=260,
-            #     duration=0.3,
-            #     t="out_cubic"
-            #
-            # ).start(content)
+            over_lay.size_hint_x=1
+            over_lay.size_hint_y=1
             Animation(
                 opacity=1,
                 duration=0.25,
@@ -1037,7 +1387,6 @@ class HomeScreen(Screen):
         else:
 
             Animation(
-
                 opacity=0,
                 duration=0.25,
             ).start(over_lay)
@@ -1049,22 +1398,34 @@ class HomeScreen(Screen):
                 t="in_cubic"
             ).start(side_panel)
             side_panel.disabled = True
+            over_lay.size_hint_x=0
+            over_lay.size_hint_y=0
             over_lay.disabled = True
             self.menu_open = False
             menu_btn.background_normal="image/menu.png"
             menu_btn.background_down="image/menu.png"
 
     def on_pre_enter(self, *args):
+        Clock.schedule_once(self.load_home_data,0)
+        self.ids.overlay.opacity = 0
+        self.ids.overlay.disabled = True
+        self.ids.side_panel.opacity = 0
+        self.ids.side_panel.disabled = True
+        self.menu_open = False
+
+
+    def load_home_data(self,_dt):
         self.total_wishes()
         self.pending_wishes()
         self.sent_wishes()
         self.failed_wishes()
 
+
     def total_wishes(self):
         try:
             conn8 = sqlite3.connect("user.db")
             cursor8 = conn8.cursor()
-            cursor8.execute("SELECT COUNT(*) FROM wishes")
+            cursor8.execute("SELECT COUNT(*) FROM wishes WHERE user_id=?", (current_user["id"],))
             total = cursor8.fetchone()[0]
             self.ids.wish_number.text=str(total)
         except Exception as e:
@@ -1073,7 +1434,7 @@ class HomeScreen(Screen):
         try:
             conn9=sqlite3.connect("user.db")
             cursor9=conn9.cursor()
-            cursor9.execute("""SELECT COUNT(*) FROM wishes WHERE status='Pending'""")
+            cursor9.execute("""SELECT COUNT(*) FROM wishes WHERE status='Pending' and user_id=?""", (current_user["id"],))
             total=cursor9.fetchone()[0]
             self.ids.pending_number.text=str(total)
         except Exception as e:
@@ -1083,7 +1444,7 @@ class HomeScreen(Screen):
         try:
             conn10=sqlite3.connect("user.db")
             cursor10=conn10.cursor()
-            cursor10.execute("SELECT COUNT(*) FROM wishes WHERE status='Success'")
+            cursor10.execute("SELECT COUNT(*) FROM wishes WHERE status='Success' and user_id=?", (current_user["id"],))
             total=cursor10.fetchone()[0]
             self.ids.sent_number.text=str(total)
         except Exception as e:
@@ -1093,7 +1454,7 @@ class HomeScreen(Screen):
         try:
             conn11=sqlite3.connect("user.db")
             cursor11=conn11.cursor()
-            cursor11.execute("SELECT COUNT(*) FROM wishes WHERE status='Failed'")
+            cursor11.execute("SELECT COUNT(*) FROM wishes WHERE status='Failed' and user_id=?", (current_user["id"],))
             total=cursor11.fetchone()[0]
             self.ids.failed_number.text=str(total)
         except Exception as e:
@@ -1101,14 +1462,20 @@ class HomeScreen(Screen):
 
     def on_enter(self,*args):
 
+        self.reset_hover_buttons()
         full_name = str(current_user["name"]).split()
         first_name = full_name[0]
         home_label = self.ids.home_label
         home_label.text=f"Welcome, {first_name}"
         self.ids.profile.text=first_name
-        self.manager.current = "home"
 
-    # Factory.register('ProfileSpinnerOption', cls=ProfileSpinnerOption)
+    def on_leave(self, *args):
+        self.reset_hover_buttons()
+
+    def reset_hover_buttons(self):
+        for widget in self.walk():
+            if isinstance(widget, HoverButton):
+                widget.reset_hover()
 
     def on_spinner_select(self, text):
         if text == "Edit Profile":
@@ -1116,24 +1483,98 @@ class HomeScreen(Screen):
             # Safely switch screens without weak reference crashes
             self.manager.current = "edit_profile"
 
-
-
-    # def change_screen_and_dismiss(self):
-    #     self.ids.drop.__self__.dismiss()
-    #     self.manager.current = "edit_profile"
-
 class EditProfileScreen(Screen):
+    generated_otp = ""
+    otp_expiry = None
+    timer_event = None
+    tim = int(30)
 
     def on_pre_enter(self,*args):
         self.ids.full_name.text = current_user["name"]
         self.ids.email.text = current_user["email"]
         self.ids.phone.text = current_user["phone"]
 
+    def verify_email(self):
+        self.generated_otp = str(random.randint(10000, 99999))
+        print(f"OTP: {self.generated_otp}")
+
+        # send email
+        with smtplib.SMTP("smtp.gmail.com", 587) as connection:
+            connection.starttls()
+            connection.login(user=my_email, password=my_password)
+            connection.sendmail(from_addr=my_email,
+                                to_addrs=self.ids.email.text,
+                                msg=f"""Subject:OTP Verification\n
+                                        Your OTP is {str(self.generated_otp)}
+                                        This OTP will expire in 30 seconds."""
+                                )
+            show_popup(title="Sent", message="OTP sent")
+
+        self.otp_expiry = datetime.now() + timedelta(seconds=int(30))
+        self.ids.verify.opacity=0
+        self.ids.verify.disabled = True
+        self.ids.OTP.opacity = 1
+        self.ids.OTP.disabled = False
+
+        self.start_resend_timer()
+
+
+    def verify_otp(self,entered_otp):
+        # entered_otp=self.ids.OTP.text
+
+        if datetime.now()>self.otp_expiry:
+            show_popup(title="",message="OTP expired\nPlease Verify again.")
+            self.ids.OTP.opacity=0
+            self.ids.OTP.disabled = True
+            self.ids.verify.opacity = 1
+            self.ids.verify.disabled = False
+            self.ids.verify.text = f"Verify"
+
+        elif entered_otp==self.generated_otp:
+            show_popup(title="OTP Verification",message="Email Verified Successfully")
+
+            # self.ids.fp_password.opacity = 1
+            # self.ids.fp_password.disabled = False
+            #
+            # self.ids.fp_reset_btn.opacity = 1
+            # self.ids.fp_reset_btn.disabled = False
+            self.ids.OTP.opacity = 0
+            self.ids.OTP.disabled = False
+            self.ids.verified.opacity = 1
+            self.ids.verified.text="Verified"
+            self.ids.verified.color= 0.13, 0.55, 0.25, 1
+        else:
+            show_popup(title="OTP Verification",message="Invalid OTP")
+    def start_resend_timer(self):
+        self.tim=30
+        self.ids.verify.disabled = True
+        self.ids.verify.text = f"Verify ({self.tim}s)"
+        if self.timer_event:
+            self.timer_event.cancel()
+
+        self.timer_event=Clock.schedule_interval(
+            self.update_timer,
+            1
+        )
+    def update_timer(self,_dt):
+        self.tim-=1
+        self.ids.verify.text = (
+            f"Verify ({self.tim}s)"
+        )
+        if self.tim <= 0:
+            self.ids.verify.text="Verify"
+            self.ids.verify.disabled = False
+            if self.timer_event:
+                self.timer_event.cancel()
+            return False
+        return True
+
     def update_profile(self):
 
         name = self.ids.full_name.text.strip()
         email = self.ids.email.text.strip()
         phone = self.ids.phone.text.strip()
+        email_verification = self.ids.verified.text.strip()
 
         conn7 = sqlite3.connect("user.db")
         cursor7 = conn7.cursor()
@@ -1177,25 +1618,110 @@ class LanguageManager(EventDispatcher):
 language_manager = LanguageManager()
 
 class PersonalizeScreen(Screen):
-    selected_color = "Blue"
+    selected_theme=StringProperty()
+    outer_container_color=ColorProperty(
+        (1,1,1,.15)
+    )
+    content_container_color=ColorProperty(
+        (0.91, 0.831, 0.969, 1.0)
+    )
+    palette_container_color=ColorProperty(
+        (1,1,1,1)
+    )
+    track_container_color=ColorProperty(
+        (0,0,0,1)
+    )
+    line_container_color=ColorProperty(
+        (1,1,1,1)
+    )
+
+
+    def toggle_language(self):
+        language_options=self.ids.language_options
+        parent=self.ids.language_parent
+
+        if language_options.opacity==0:
+            language_options.opacity=1
+            language_options.disabled=False
+            language_options.height="50dp"
+
+            self.ids.arrow_icon.icon="chevron-down"
+        else:
+            language_options.opacity=0
+            language_options.disabled=True
+            language_options.height=0
+
+            self.ids.arrow_icon.icon="chevron-right"
+
+    # def on_pre_enter(self, *args):
+    #     self.load_settings()
+    # def on_kv_post(self, base_widget):
+    #     super().on_kv_post(base_widget)
+    #     self.ids.font_slider.bind(
+    #         value=self.update_font_preview
+    #     )
+    #
+    # def update_font_preview(self,slider,value):
+    #     value=int(value)
+    #     self.ids.preview_text.font_size=value
+    #     self.ids.font_label.text=f"{value} px"
+    #     print("slider value:",value)
+    #     print("preview font size:", self.ids.preview_text.font_size)
+
+    def select_language(self,language):
+        print("Selected language:", language)
+        parent=self.ids.language_parent
+
+        # Update the label text if you want
+        self.ids.language_label.text=language
+        if self.ids.language_label.text=="English":
+            self.ids.english_button.style="filled"
+            # self.ids.english_button.md_bg_color = (0.4196, 0.2902, 0.6510, 1.0)
+            # self.ids.english_text.color= (1,1,1,1)
+        else:
+            self.ids.english_button.style="text"
+            # self.ids.english_button.md_bg_color = (0,0,0,1)
+            # self.ids.english_text.color = (1, 1, 1, 1)
+
+        if self.ids.language_label.text=="Hindi":
+            self.ids.hindi_button.style="filled"
+        else:
+            self.ids.hindi_button.style="text"
+        if self.ids.language_label.text=="French":
+            self.ids.french_button.style="filled"
+        else:
+            self.ids.french_button.style="text"
+        if self.ids.language_label.text=="Chinese":
+            self.ids.chinese_button.style="filled"
+        else:
+            self.ids.chinese_button.style="text"
+
+        # Hide language options
+        self.ids.language_options.opacity = 0
+        self.ids.language_options.disabled = True
+        self.ids.arrow_icon.icon="chevron-right"
+        self.ids.language_options.height= "0dp"
+
 
     def refresh_language(self):
         t = App.get_running_app().language.translate
+        # self.ids.accent.text=t("Accent Color")
+        if self.ids.language_label.text=="Hindi":
+            self.ids.language_label.text=t("Hindi")
+        else:
+            self.ids.language_label.text=t("English")
+        self.ids.font_size.text=t("Font Size")
+        if self.ids.font_slider.value==range(11,22):
+            self.ids.font_label.text=t(self.ids.font_slider.value)
         self.ids.save.text=t("Save Settings")
         self.ids.restore.text=t("Restore Default")
-        self.ids.accent.text=t("Accent Color")
-        if self.ids.language_spinner.text=="Hindi":
-            self.ids.language_spinner.text=t("Hindi")
-        else:
-            self.ids.language_spinner.text=t("English")
-        self.ids.font_size.text=t("Font Size")
-        if self.ids.font_value.text==range(11,30):
-            self.ids.font_slider.value=t(11,30)
-        self.ids.font_value.text=t("18")
         self.ids.personalize.text=t("Personalize")
 
-    def background_theme(self):
-        theme=self.ids.theme_spinner.text
+    def background_theme(self,selected_theme):
+        self.selected_theme=selected_theme
+        active=True
+        dawn=self.ids.dawn
+        midnight=self.ids.midnight
         login=self.manager.get_screen("login")
         signup=self.manager.get_screen("signup")
         welcome=self.manager.get_screen("welcome")
@@ -1204,21 +1730,23 @@ class PersonalizeScreen(Screen):
         forgotpassword=self.manager.get_screen("forgot")
         editprofile=self.manager.get_screen("edit_profile")
         personalize=self.manager.get_screen("personalize")
+        setting=self.manager.get_screen("setting")
 
 
-        if theme=="Dark":
-            login.ids.image.source="image/wisher-dark-bg.jpg"
+        if selected_theme=="midnight":
+
+            login.ids.image.source="image/midnight.png"
             login.ids.login_email.foreground_color=(1,1,1,1)
             login.ids.login_password.foreground_color=(1,1,1,1)
 
-            signup.ids.image.source="image/wisher-dark-bg.jpg"
+            signup.ids.image.source="image/midnight.png"
             signup.ids.signup_name.foreground_color=(1,1,1,1)
             signup.ids.signup_email.foreground_color=(1,1,1,1)
             signup.ids.signup_password.foreground_color=(1,1,1,1)
             signup.ids.signup_name.foreground_color=(1,1,1,1)
             signup.ids.signup_phone.foreground_color=(1,1,1,1)
 
-            addwish.ids.image.source="image/wisher-dark-bg.jpg"
+            addwish.ids.image.source="image/midnight.png"
             addwish.ids.wish_name.foreground_color=(1,1,1,1)
             addwish.ids.wish_phone.foreground_color=(1,1,1,1)
             addwish.ids.wish_email.foreground_color=(1,1,1,1)
@@ -1241,22 +1769,69 @@ class PersonalizeScreen(Screen):
             home.side_panel_color = (0.0588, 0.0627, 0.1411, 1.0)
             home.ids.add_image.color=(1,1,1,1)
 
-            forgotpassword.ids.image.source="image/wisher-dark-bg.jpg"
+            forgotpassword.ids.image.source="image/midnight.png"
             forgotpassword.ids.fp_email.foreground_color = (1, 1, 1, 1)
             forgotpassword.ids.otp_input.foreground_color = (1, 1, 1, 1)
             forgotpassword.ids.new_password.foreground_color = (1, 1, 1, 1)
 
-            welcome.ids.image.source="image/wisher-dark-bg.jpg"
+            welcome.ids.image.source="image/midnight.png"
 
-            editprofile.ids.image.source="image/wisher-dark-bg.jpg"
+            editprofile.ids.image.source="image/midnight.png"
             editprofile.ids.full_name.foreground_color = (1, 1, 1, 1)
             editprofile.ids.email.foreground_color = (1, 1, 1, 1)
             editprofile.ids.phone.foreground_color = (1, 1, 1, 1)
 
-            personalize.ids.image.source="image/wisher-dark-bg.jpg"
+            personalize.ids.image.source="image/midnight.png"
+            personalize.ids.theme_text.color = (0.949, 0.914, 1.0, 1.0)
+            personalize.ids.dark_label.color = (0.949, 0.914, 1.0, 1.0)
+            personalize.ids.language_text.color = (0.949, 0.914, 1.0, 1.0)
+            personalize.ids.font_size.color = (0.949, 0.914, 1.0, 1.0)
+            personalize.ids.palette_color.icon_color = (0.910, 0.831, 0.969, 1.0)
+            personalize.ids.dark_icon.icon_color= (0.910, 0.831, 0.969, 1.0)
+            personalize.ids.translate_icon.icon_color= (0.910, 0.831, 0.969, 1.0)
+            personalize.ids.font_icon.icon_color = (0.910, 0.831, 0.969, 1.0)
+            personalize.ids.language_change.md_bg_color = 1, 1, 1, 0.10
+            personalize.ids.change_text.color = (0.949, 0.914, 1.0, 1.0)
+            personalize.ids.arrow_icon.icon_color = (0.949, 0.914, 1.0, 1.0)
+            personalize.ids.preview_text.color = (0.957, 0.925, 1.0, 1.0)
+            personalize.ids.preview_label.color = (0.725, 0.651, 0.831, 1.0)
+            personalize.ids.sub_labels.color = (0.643, 0.576, 0.761, 1.0)
+            personalize.ids.sub_labels.text = "On -- midnight glass interface"
+            personalize.ids.theme_sub_label.color = (0.643, 0.576, 0.761, 1.0)
+            personalize.ids.language_label.color = (0.643, 0.576, 0.761, 1.0)
+            personalize.ids.font_label.color = (0.643, 0.576, 0.761, 1.0)
+            personalize.ids.midnight.md_bg_color = (1, 1, 1, 0.05)
+            personalize.ids.midnight_text.color = (1, 1, 1, 1)
+            personalize.ids.midnight_check.icon_color = (1, 1, 1, 1)
+            personalize.ids.dawn.md_bg_color = (1, 1, 1, 0.05)
+            personalize.ids.dawn_text.color = (1, 1, 1, 1)
+            personalize.ids.english_text.color= (1,1,1,1)
+            personalize.ids.hindi_text.color= (1,1,1,1)
+            personalize.ids.french_text.color= (1,1,1,1)
+            personalize.ids.chinese_text.color= (1,1,1,1)
+
+            self.outer_container_color= (
+                0.0588, 0.0627, 0.1412, 1.0
+            )
+            self.content_container_color = (
+                0.0588, 0.0627, 0.1412, 1.0
+            )
+            self.palette_container_color= (
+                1,1,1,.10
+            )
+            self.track_container_color= (
+                0.541, 0.420, 0.769, 1.0
+            )
+            self.line_container_color= (
+                1,1,1,.10
+            )
 
 
-        elif theme=="Light":
+            setting.ids.image.source="image/midnight.png"
+
+
+
+        elif selected_theme=="dawn":
             login.ids.image.source = "image/wisher-app-background_login.jpg"
             login.ids.login_email.foreground_color = (0, 0, 0, 1)
             login.ids.login_password.foreground_color = (0, 0, 0, 1)
@@ -1304,34 +1879,195 @@ class PersonalizeScreen(Screen):
             editprofile.ids.phone.foreground_color = (0, 0, 0, 1)
 
             personalize.ids.image.source = "image/wisher-app-background_login.jpg"
+            personalize.ids.theme_text.color = (0, 0, 0, 1)
+            personalize.ids.dark_label.color = (0, 0, 0, 1)
+            personalize.ids.language_text.color = (0, 0, 0, 1)
+            personalize.ids.font_size.color = (0, 0, 0, 1)
+            personalize.ids.palette_color.icon_color = (0,0,0,1)
+            personalize.ids.dark_icon.icon_color=(0,0,0,1)
+            personalize.ids.translate_icon.icon_color = (0, 0, 0, 1)
+            personalize.ids.font_icon.icon_color = (0, 0, 0, 1)
+            personalize.ids.language_change.md_bg_color = (1, 1, 1, 1)
+            personalize.ids.change_text.color = (0,0,0,1)
+            personalize.ids.arrow_icon.icon_color = (0,0,0,1)
+            personalize.ids.preview_text.color = (0,0,0,1)
+            personalize.ids.preview_label.color = (0.3, 0.3, 0.3, 1)
+            personalize.ids.sub_labels.color = (0.3, 0.3, 0.3, 1)
+            personalize.ids.sub_labels.text = "Off -- bright, daytime interface"
+            personalize.ids.theme_sub_label.color = (0.3, 0.3, 0.3, 1)
+            personalize.ids.language_label.color = (0.3, 0.3, 0.3, 1)
+            personalize.ids.font_label.color = (0.3, 0.3, 0.3, 1)
+            personalize.ids.midnight_text.color = (0, 0, 0, 1)
+            personalize.ids.midnight_check.icon_color = (0, 0, 0, 1)
+            personalize.ids.dawn_text.color = (0,0,0, 1)
+            personalize.ids.dawn_check.icon_color = (0, 0, 0, 1)
+            personalize.ids.dawn.md_bg_color = (1, 1, 1, 1)
+            personalize.ids.dawn.line_color = (0, 0, 0, 1)
+            personalize.ids.english_text.color = (0, 0, 0, 1)
+            personalize.ids.hindi_text.color = (0, 0, 0, 1)
+            personalize.ids.french_text.color = (0, 0, 0, 1)
+            personalize.ids.chinese_text.color = (0, 0, 0, 1)
 
-    def select_color(self, color):
-        self.selected_color = color
-        print("Selected:", color)
+
+            self.outer_container_color = (
+                1,1,1,.15
+            )
+            self.content_container_color=(
+                0.91, 0.831, 0.969, 1.0
+            )
+            self.palette_container_color=(
+                1,1,1,1
+            )
+            self.track_container_color= (
+                0,0,0,1
+            )
+            self.line_container_color= (
+                1,1,1,1
+            )
+
+            setting.ids.image.source="image/wisher-app-background_login.jpg"
+
+    def dark_mode(self):
+        login = self.manager.get_screen("login")
+        signup = self.manager.get_screen("signup")
+        welcome = self.manager.get_screen("welcome")
+        addwish = self.manager.get_screen("add_wish")
+        home = self.manager.get_screen("home")
+        forgotpassword = self.manager.get_screen("forgot")
+        editprofile = self.manager.get_screen("edit_profile")
+        personalize = self.manager.get_screen("personalize")
+        setting = self.manager.get_screen("setting")
+        dark_mode = self.ids.dark_switch
+
+        if dark_mode.active==True:
+            login.ids.image.source = "image/wisher-background-darkmode.jpg"
+            login.ids.login_email.foreground_color = (1, 1, 1, 1)
+            login.ids.login_password.foreground_color = (1, 1, 1, 1)
+
+            signup.ids.image.source = "image/wisher-background-darkmode.jpg"
+            signup.ids.signup_name.foreground_color = (1, 1, 1, 1)
+            signup.ids.signup_email.foreground_color = (1, 1, 1, 1)
+            signup.ids.signup_password.foreground_color = (1, 1, 1, 1)
+            signup.ids.signup_name.foreground_color = (1, 1, 1, 1)
+            signup.ids.signup_phone.foreground_color = (1, 1, 1, 1)
+
+            addwish.ids.image.source = "image/wisher-background-darkmode.jpg"
+            addwish.ids.wish_name.foreground_color = (1, 1, 1, 1)
+            addwish.ids.wish_phone.foreground_color = (1, 1, 1, 1)
+            addwish.ids.wish_email.foreground_color = (1, 1, 1, 1)
+            addwish.ids.wish_subject.foreground_color = (1, 1, 1, 1)
+            addwish.ids.wish_message.foreground_color = (1, 1, 1, 1)
+            addwish.ids.wish_date.foreground_color = (1, 1, 1, 1)
+            addwish.ids.wish_time.foreground_color = (1, 1, 1, 1)
+            addwish.side_panel_color = (0.0588, 0.0627, 0.1411, 1.0)
+            addwish.ids.add_image.color = (1, 1, 1, 1)
+
+            home.ids.image.source = "image/wisher-background-darkmode.jpg"
+            home.ids.total.color = (1, 1, 1, 1)
+            home.ids.wish_number.color = (1, 1, 1, 1)
+            home.ids.pending.color = (1, 1, 1, 1)
+            home.ids.pending_number.color = (1, 1, 1, 1)
+            home.ids.sent.color = (1, 1, 1, 1)
+            home.ids.sent_number.color = (1, 1, 1, 1)
+            home.ids.failed.color = (1, 1, 1, 1)
+            home.ids.failed_number.color = (1, 1, 1, 1)
+            home.side_panel_color = (0.0588, 0.0627, 0.1411, 1.0)
+            home.ids.add_image.color = (1, 1, 1, 1)
+
+            forgotpassword.ids.image.source = "image/wisher-background-darkmode.jpg"
+            forgotpassword.ids.fp_email.foreground_color = (1, 1, 1, 1)
+            forgotpassword.ids.otp_input.foreground_color = (1, 1, 1, 1)
+            forgotpassword.ids.new_password.foreground_color = (1, 1, 1, 1)
+
+            welcome.ids.image.source = "image/wisher-background-darkmode.jpg"
+
+            editprofile.ids.image.source = "image/wisher-background-darkmode.jpg"
+            editprofile.ids.full_name.foreground_color = (1, 1, 1, 1)
+            editprofile.ids.email.foreground_color = (1, 1, 1, 1)
+            editprofile.ids.phone.foreground_color = (1, 1, 1, 1)
+
+            personalize.ids.image.source = "image/wisher-background-darkmode.jpg"
+            # personalize.ids.image.background_color= (0.0784, 0.0392, 0.1529, 1.0)
+            personalize.ids.theme_text.color = (0.949, 0.914, 1.0, 1.0)
+            personalize.ids.dark_label.color= (0.949, 0.914, 1.0, 1.0)
+            personalize.ids.language_text.color = (0.949, 0.914, 1.0, 1.0)
+            personalize.ids.font_size.color= (0.949, 0.914, 1.0, 1.0)
+            personalize.ids.palette_color.icon_color= (0.910, 0.831, 0.969, 1.0)
+            personalize.ids.dark_icon.icon_color = (0.910, 0.831, 0.969, 1.0)
+            personalize.ids.translate_icon.icon_color = (0.910, 0.831, 0.969, 1.0)
+            personalize.ids.font_icon.icon_color = (0.910, 0.831, 0.969, 1.0)
+            personalize.ids.language_change.md_bg_color= 1,1,1,0.10
+            personalize.ids.change_text.color= (0.949, 0.914, 1.0, 1.0)
+            personalize.ids.arrow_icon.icon_color= (0.949, 0.914, 1.0, 1.0)
+            personalize.ids.preview_text.color = (0.957, 0.925, 1.0, 1.0)
+            personalize.ids.preview_label.color= (0.725, 0.651, 0.831, 1.0)
+            personalize.ids.sub_labels.color= (0.643, 0.576, 0.761, 1.0)
+            personalize.ids.sub_labels.text="On -- midnight glass interface"
+            personalize.ids.theme_sub_label.color= (0.643, 0.576, 0.761, 1.0)
+            personalize.ids.language_label.color= (0.643, 0.576, 0.761, 1.0)
+            personalize.ids.font_label.color= (0.643, 0.576, 0.761, 1.0)
+            personalize.ids.midnight.md_bg_color= (1,1,1,0.05)
+            if self.selected_theme=="midnight":
+                personalize.ids.midnight.line_color = (0.541, 0.420, 0.769, 1.0)
+            personalize.ids.dawn.md_bg_color = (1, 1, 1, 0.05)
+            if self.selected_theme=="dawn":
+                personalize.ids.dawn.line_color = (0.541, 0.420, 0.769, 1.0)
+            personalize.ids.midnight_text.color= (1,1,1,1)
+            personalize.ids.midnight_check.icon_color= (1,1,1,1)
+            personalize.ids.dawn_text.color = (1, 1, 1, 1)
+            personalize.ids.dawn_check.icon_color = (1, 1, 1, 1)
+
+
+            self.outer_container_color = (
+                0.1, 0.04, 0.18, 0.35
+            )
+            self.content_container_color = (
+                0.1, 0.04, 0.18, 0.55
+            )
+            self.palette_container_color=(
+                1,1,1,.10
+            )
+            self.track_container_color= (
+                0.541, 0.420, 0.769, 1.0
+            )
+            self.line_container_color= (
+                1,1,1,0.10
+            )
+
+            setting.ids.image.source = "image/wisher-background-darkmode.jpg"
+        elif dark_mode.active==False:
+            if self.selected_theme=="dawn":
+                self.background_theme("dawn")
+
+            elif self.selected_theme =="midnight":
+                self.background_theme("midnight")
 
     def restore_default(self):
-        self.ids.theme_spinner.text = "Light"
-        self.ids.language_spinner.text = "English"
-        self.ids.font_slider.value = 18
-        self.selected_color = "Blue"
+        self.ids.theme.text = self.background_theme("dawn")
+        self.ids.language_label.text = "English"
+        self.ids.font_slider.value = 16
 
     def save_settings(self):
-        theme = self.ids.theme_spinner.text
-        language = self.ids.language_spinner.text
-        font_size = int(self.ids.font_slider.value)
+        # if self.selected_theme=="midnight":
+        #     self.selected_theme= "midnight"
+        # elif self.selected_theme=="dawn":
+        #     self.selected_theme = "dawn"
+        theme=self.selected_theme
+
+        language = self.ids.language_label.text
+        font_size = self.ids.font_label.text
         conn9 = sqlite3.connect("user.db")
         cursor9 = conn9.cursor()
 
         cursor9.execute("""
         INSERT OR REPLACE INTO personalize
-        (user_id,theme,language,font_size,accent_color)
-        VALUES(?,?,?,?,?)
+        (user_id,theme,language,font_size)
+        VALUES(?,?,?,?)
         """,(
                            current_user["id"],
                            theme,
                            language,
-                           font_size,
-                           self.selected_color
+                           font_size
                        ))
 
         conn9.commit()
@@ -1342,7 +2078,35 @@ class PersonalizeScreen(Screen):
         print(theme)
         print(language)
         print(font_size)
-        print(self.selected_color)
+
+    def load_settings(self):
+        print("current_user:", current_user["id"])
+        conn21=sqlite3.connect("user.db")
+        cursor21=conn21.cursor()
+
+        cursor21.execute("SELECT * FROM personalize WHERE user_id=?",(current_user["id"],))
+        row=cursor21.fetchone()
+        conn21.close()
+
+        if row is not None:
+            self.selected_theme = row[1]
+            self.background_theme(str(self.selected_theme))
+            self.ids.language_label.text = row[2]
+            self.ids.font_label.text = row[3]
+
+            print("Theme:", self.selected_theme)
+            print("Language:", row[2])
+            print("Font size:", row[3])
+
+        else:
+            # No settings saved for this user
+            self.selected_theme = "dawn"
+            self.ids.language_label.text = "English"
+            self.ids.font_label.text = "18"
+
+            self.background_theme("dawn")
+
+            print("No personalization settings found.")
 
 
 
@@ -1355,7 +2119,7 @@ class HistoryScreen(Screen):
     def load_history(self):
         self.ids.history_container.clear_widgets()
         conn10 = sqlite3.connect("user.db")
-        cursor10 = conn.cursor()
+        cursor10 = conn10.cursor()
 
         cursor10.execute("""
             SELECT
@@ -1367,9 +2131,9 @@ class HistoryScreen(Screen):
                 time,
                 sent,
                 platform
-            FROM wishes
+            FROM wishes WHERE user_id=?
             ORDER BY date DESC,time DESC
-            """)
+            """, (current_user["id"],))
         rows = cursor10.fetchall()
         conn10.close()
 
@@ -1407,8 +2171,8 @@ class HistoryScreen(Screen):
                 sent,
                 platform
             FROM wishes
-            WHERE LOWER(name) LIKE ?
-            """, ("%"+keyword+"%", ))
+            WHERE LOWER(name) LIKE ? and user_id=?
+            """, ("%"+keyword+"%", current_user["id"],))
 
         rows = cursor11.fetchall()
         conn11.close()
@@ -1621,7 +2385,7 @@ class StorageContent(BoxLayout):
     def delete_all():
 
         conn12 = sqlite3.connect("user.db")
-        cursor12 = conn.cursor()
+        cursor12 = conn12.cursor()
 
         cursor12.execute("DELETE FROM wishes")
 
@@ -1834,30 +2598,14 @@ class DashboardScreen(WelcomeScreen):
     pass
 #===============Screen Manager================
 class WindowManager(ScreenManager):
-    pass
-    # def switch_to_login(self):
-    #     self.current = "login"
-    #
-    # def switch_to_signup(self):
-        # self.current = "signup"
-    #
-    # def switch_to_dashboard(self):
-    #     self.current = "dashboard"
+    def __init__(self, **kwargs):
+        super().__init__(
+            transition=WipeTransition(),
+            **kwargs
+        )
 
 
-# def send_message(wish):
-#     name, phone, message = wish[1], wish[2], wish[3]
-#     date = wish[4]
-#     time_str = wish[5]
-#
-#     # convert time
-#     hour, minute = map(int, time_str.split(":"))
-#
-#     print(f"Sending WhatsApp message to {name}")
-#
-#     send_whatsapp_message(phone, message, hour, minute)
-#
-#     print(f"Sending message to {name}: {message}")
+
 
 def close_whatsapp(wish):
     time.sleep(10)
@@ -1873,73 +2621,122 @@ def close_whatsapp(wish):
         except Exception as e:
             print("Error closing WhatsApp:",e)
 
-
-
-
 def save_credentials(user_email):
     conn5 = sqlite3.connect("user.db")
     cursor5 = conn5.cursor()
-    flow = InstalledAppFlow.from_client_secrets_file(
-        "client_secret.json",
-        scopes
-    )
-    creds = flow.run_local_server(port=0)
-    cursor5.execute("""INSERT OR REPLACE INTO gmail_tokens(
-                        user_email,
-                        token,
-                        refresh_token,
-                        token_uri,
-                        client_id,
-                        client_secret,
-                        scopes,
-                        expiry
-                    )
-                    VALUES(?,?,?,?,?,?,?,?)""",
-                    (
-                        user_email,
-                        creds.token,
-                        creds.refresh_token,
-                        creds.token_uri,
-                        creds.client_id,
-                        creds.client_secret,
-                        ",".join(creds.scopes),
-                        creds.expiry.isoformat()
-                    )
-                    )
-    conn5.commit()
+    try:
+        flow = InstalledAppFlow.from_client_secrets_file(
+            "client_secret.json",
+            scopes
+        )
+        creds = flow.run_local_server(port=0,open_browser=True,timeout_seconds=120)
+        if not creds:
+            print("Gmail authorization cancelled.")
+            return False
+        cursor5.execute("""INSERT OR REPLACE INTO gmail_tokens(
+                            user_email,
+                            token,
+                            refresh_token,
+                            token_uri,
+                            client_id,
+                            client_secret,
+                            scopes,
+                            expiry
+                        )
+                        VALUES(?,?,?,?,?,?,?,?)""",
+                        (
+                            user_email,
+                            creds.token,
+                            creds.refresh_token,
+                            creds.token_uri,
+                            creds.client_id,
+                            creds.client_secret,
+                            ",".join(creds.scopes),
+                            creds.expiry.isoformat()
+                        )
+                        )
+        conn5.commit()
+        print("Gmail credentials saved.")
+        return True
 
+    except Exception as e:
+        print("Gmail authorization failed or cancelled:",repr(e))
+        return False
+
+    finally:
+        conn5.close()
 
 
 scopes=["https://www.googleapis.com/auth/gmail.send"]
 
 def send_message(wish):
-    name = wish[1]
-    recipient_phone = wish[2]
-    recipient_email=wish[3]
-    message = wish[4]
-    subject = wish[5]
-    plat_form=wish[8].split(",")
+    load_dotenv()
+    name = wish[2]
+    recipient_phone = wish[3]
+    recipient_email=wish[4]
+    message = wish[5]
+    subject = wish[6]
+    plat_form=wish[9].split(",")
+    phone_number_id=os.getenv("PHONE_NUMBER_ID")
 
     conn5=sqlite3.connect("user.db")
     cursor5=conn5.cursor()
-    whatsapp_uri=F"whatsapp://send?phone={recipient_phone}"
+    whatsapp_url = (f"https://graph.facebook.com/v26.0/"
+                    f"{phone_number_id}/messages"
+                    )
+    access_token="EAATHaYVxEz0BSXmaHcgg9PPjfi7fuLvQ3pVwwtGAeoPluwYiQtZBJhLQtKKLzEawWMk7qFZCY2IQOxdyKJTqZBiYPeaWj5HI1cXGii4aiBN5mpEEo32viELUVuciNU5lPDZAtH3eR5TZBCltAFtntHfBCah7XtTetl49PIcrt0ZA8wYxszB8E2u28ZAh5mu50fIyi7on1a8T968rpH5PXbLcFjdzTEo7ZBkMAotc"
 
+    def generate_appsecret_proof(access_token, app_secret):
+        app_secret=os.getenv("APP_SECRET")
+        access_token=os.getenv("ACCESS_TOKEN")
+        return hmac.new(
+            app_secret.encode("utf-8"),
+            access_token.encode("utf-8"),
+            hashlib.sha256
+        ).hexdigest()
 
     if "WhatsApp" in plat_form:
         try:
-            print(f"Opening WhatsApp for {name}")
-            # Trigger Windows to open the URI with the WhatsApp desktop application
-            subprocess.Popen(["cmd", "/C", f"start {whatsapp_uri}"], shell=True)
-            # Wait for the desktop application to open and load the chat window
-            time.sleep(10)
-            # it touches the chat window
-            pyautogui.click()
-            # Type the message automatically
-            pyautogui.typewrite(f"{message}")
+            # appsecret_proof = generate_appsecret_proof(
+            #     os.getenv("ACCESS_TOKEN"),
+            #     os.getenv("APP_SECRET")
+            # )
+            headers = {
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json",
+            }
+            data = {
+                "messaging_product": "whatsapp",
+                "recipient_type": "individual",
+                "to": recipient_phone,
+                "type": "text",
+                "text": {
+                    "body": message
+                }
+            }
+            # params = {
+            #     "appsecret_proof": appsecret_proof
+            # }
 
-            time.sleep(1)
-            # Press enter to send the message
-            pyautogui.press('enter')
+            response=requests.post(whatsapp_url,headers=headers,json=data,timeout=50)
+            print(response.status_code)
+            print(response.text)
+            return response.ok
+
+
+            # print(f"Opening WhatsApp for {name}")
+            # # Trigger Windows to open the URI with the WhatsApp desktop application
+            # subprocess.Popen(["cmd", "/C", f"start {whatsapp_uri}"], shell=True)
+            # # Wait for the desktop application to open and load the chat window
+            # time.sleep(10)
+            # # it touches the chat window
+            # pyautogui.click()
+            # # Type the message automatically
+            # pyautogui.typewrite(f"{message}")
+            #
+            # time.sleep(1)
+            # # Press enter to send the message
+            # pyautogui.press('enter')
 
         except Exception as e:
             print(e)
@@ -1962,7 +2759,7 @@ def send_message(wish):
 
             row = cursor5.fetchone()
             if row is None:
-                print("No Gmail account connected")
+                show_popup(title="",message="No Gmail account connected")
                 conn5.close()
                 return
 
@@ -2011,7 +2808,7 @@ def send_message(wish):
             print(e)
 
     if "SMS" in plat_form:
-        
+        pass
 
 
 def scheduler_interval():
@@ -2046,10 +2843,10 @@ def check_wishes():
         sound=True
     for wish in all_wishes:
         wish_id = wish[0]
-        name = wish[1]
-        date = wish[6]
-        time_str = wish[7]
-        plat_form=wish[8].split(",")
+        name = wish[2]
+        date = wish[7]
+        time_str = wish[8]
+        plat_form=wish[9].split(",")
 
 
 
@@ -2102,12 +2899,12 @@ def check_wishes():
         elif now>wish_time+timedelta(seconds=interval):
             cursor1.execute("""UPDATE wishes SET status="Failed" WHERE id=?""",(wish_id,))
             conn1.commit()
-            send_notification(
-                enable_notification=enable_notification,
-                sound=sound,
-                title="Wish failed",
-                message=f"{name}'s wish was failed"
-            )
+            # send_notification(
+            #     enable_notification=enable_notification,
+            #     sound=sound,
+            #     title="Wish failed",
+            #     message=f"{name}'s wish was failed"
+            # )
     conn1.close()
 
 
@@ -2238,6 +3035,46 @@ class WisherApp(MDApp):
         self.language.bind(current_language=self.on_language_changed)
         return root
 
+    def restore_login(self):
+        personalize=self.root.get_screen("personalize")
+        conn23 = sqlite3.connect("user.db")
+        cursor23 = conn23.cursor()
+
+        cursor23.execute("""
+                SELECT user_id
+                FROM login_session
+                WHERE id=1 AND is_logged_in=1
+            """)
+
+        row = cursor23.fetchone()
+        if row is None:
+            return False
+
+        user_id = row[0]
+        print(user_id)
+
+        # Get complete user information
+
+        cursor23.execute("""
+                SELECT id, name, email, phone
+                FROM users
+                WHERE id=?
+            """, (user_id,))
+
+        user = cursor23.fetchone()
+
+        if user is None:
+            return False
+
+        # Restore current_user
+        current_user["id"] = user[0]
+        current_user["name"] = user[1]
+        current_user["email"] = user[2]
+        current_user["phone"] = user[3]
+
+        personalize.load_settings()
+        return True
+
     def on_request_close(self,*args):
 
         conn17 = sqlite3.connect("user.db")
@@ -2298,13 +3135,15 @@ class WisherApp(MDApp):
         self.tray_icon = pystray.Icon(
             "Wisher",
             image,
-            "Wisher App",
+            "Wisher",
             menu
         )
 
         self.tray_icon.run()
 
     def on_start(self):
+        initialize_database()
+
         conn16 = sqlite3.connect("user.db")
         cursor16 = conn16.cursor()
 
@@ -2315,7 +3154,8 @@ class WisherApp(MDApp):
         """)
 
         row = cursor16.fetchone()
-
+        if row is None:
+            return
 
         if row[0]==1:
             threading.Thread(
@@ -2323,12 +3163,16 @@ class WisherApp(MDApp):
             ).start()
             reset_scheduler_status()
             threading.Thread(target=notification_scheduler, daemon=True).start()
-        # else:
-        #     cursor16.execute("""
-        #     UPDATE advanced_settings SET scheduler_status = 'Stopped' WHERE id=1""")
-        #     conn16.commit()
+        else:
+            # cursor16.execute("""
+            # UPDATE general_settings SET auto_scheduler = 1 WHERE id=1""")
+            # conn16.commit()
 
-        conn16.close()
+
+            conn16.close()
+
+        self.root.current="flash"
+
 
 
     def on_language_changed(self,*args):
