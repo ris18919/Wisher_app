@@ -42,7 +42,7 @@ LANGUAGES = {
         "Hindi":"हिंदी",
 
         "Save":"सहेजें",
-        "Restore defaults":"",
+        "Restore default":"डिफ़ॉल्ट बहाल",
         "Cancel":"रद्द करें",
 
         "recipient":"प्राप्तकर्ता",
