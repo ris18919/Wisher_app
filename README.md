@@ -1,1 +1,1 @@
-# Wisher-app
+# Wisher
