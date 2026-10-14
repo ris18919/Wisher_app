@@ -12,8 +12,7 @@ import winreg
 import hmac
 import hashlib
 
-from asynckivy import fade_transition
-from docutils.utils.math.latex2mathml import letters
+from twilio.rest import Client
 from dotenv import load_dotenv
 from kivy.uix.textinput import TextInput
 from kivy.core.audio import SoundLoader
@@ -23,7 +22,6 @@ from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 from sched import scheduler
 
-import pyautogui
 import pystray
 import requests
 from PIL import Image
@@ -34,56 +32,64 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from kivy.animation import Animation
 from kivy.app import App
-# from kivy.app import App
+
 from kivy.clock import Clock
 from kivy.core.text import LabelBase
 from kivy.core.window import Window
 from kivy.event import EventDispatcher
 from kivy.factory import Factory
 from kivy.lang import Builder
-from kivy.metrics import sp,dp
+from kivy.metrics import dp
 from kivy.properties import StringProperty, ListProperty, ColorProperty, BooleanProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
-# from kivy.uix.popup import Popup
-# from kivy.uix.label import Label
-from kivy.uix.screenmanager import ScreenManager, Screen, NoTransition, FadeTransition, SwapTransition, SlideTransition, \
-    WipeTransition
+
+from kivy.uix.screenmanager import FloatLayout, ScreenManager, Screen, WipeTransition
 from kivymd.app import MDApp
 from kivymd.uix.button import MDButton, MDButtonText
 from kivymd.uix.dialog import MDDialog, MDDialogHeadlineText, MDDialogSupportingText, MDDialogButtonContainer
 from kivymd.uix.pickers import MDTimePickerDialHorizontal, MDModalDatePicker
 from kivymd.uix.widget import MDWidget
 from pystray import MenuItem as Item
-from streamlit.cli_util import open_browser
+from pathlib import Path
 
 from languages import LANGUAGES
 
-my_email="rishabhjadonrishabh@gmail.com"
-my_password="jstt sgha quei xjrk"
 current_user={
     "id":None,
     "name":"",
     "email":"",
     "phone":"",
+    "email_verification":"",
+    "phone_verification":""
 }
+alphabets=["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z",
+           "a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"]
+numbers=["0","1","2","3","4","5","6","7","8","9"]
+symbols=["#","$","%","&","*","@","!","?"]
+
+generate_password_length=8
+generate_password="".join(random.choice(alphabets+numbers+symbols) for i in range(generate_password_length))
+print(f"Generated Password: {generate_password}")
+
 Window.fullscreen = False
 Window.resizable = True
 Window.size=(780,750)
 Window.minimum_width = 780
 Window.minimum_height = 750
 
+BASE_DIR = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
+FONT_PATH = BASE_DIR / "fonts" / "Noto_Sans" / "NotoSans-VariableFont.ttf"
+if not FONT_PATH.is_file():
+    raise FileNotFoundError(f"Font file not found: {FONT_PATH}")
 
-LabelBase.register(name="RobotoFlex",
-                   fn_regular="fonts/Roboto_Flex/RobotoFlex-VariableFont.ttf")
 LabelBase.register(name="NotoSans",
-                   fn_regular="fonts/Noto_Sans/NotoSans-VariableFont.ttf",)
-LabelBase.register(name="NotoEmoji",
-                   fn_regular="fonts/Noto_Emoji/NotoEmoji-VariableFont.ttf")
-LabelBase.register(name="NotoColorEmoji",
-                   fn_regular="fonts/Noto_Sans/Noto_Color_Emoji/NotoColorEmoji-Regular.ttf")
+                   fn_regular=str(FONT_PATH),)
 LabelBase.register(name="NotoSansDevanagari",
-                   fn_regular="fonts/Noto_Sans_Devanagari/NotoSansDevanagari-VariableFont.ttf")
+                   fn_regular=str(FONT_PATH),)
+
+def resource_path(relative_path):
+    return str(BASE_DIR / relative_path)
 
 # ==================Database=========================
 
@@ -236,6 +242,64 @@ def show_popup(title, message):
 
     dialog.open()
 
+def retry_internet_connection():
+        flash=App.get_running_app().root.get_screen("flash")
+        flash.initialize_flash_screen(0)
+
+def show_internet_connection_popup(title, message):
+
+    retry_button = MDButton(
+        style="text",
+        pos_hint={"center_x":0.5},
+        theme_width="Custom",
+        size_hint_x=None,
+        width="70dp",
+        on_release=lambda *args: retry_internet_connection()
+    )
+
+    retry_button.add_widget(
+        MDButtonText(
+            text="Retry",
+            theme_text_color="Custom",
+            text_color=(0,0,0,1),
+            halign="center",
+        )
+    )
+
+    dialog = MDDialog(
+
+        
+        MDDialogHeadlineText(
+            text=title,
+            halign="left",
+        ),
+
+        MDDialogSupportingText(
+            text=message,
+            theme_text_color="Custom",
+            text_color=(0,0.4,1,1),
+            halign="center"
+        ),
+
+        MDDialogButtonContainer(
+            MDWidget(),
+            retry_button,
+            MDWidget(),
+            spacing="0dp",
+
+
+        ),
+        width_offset=dp(24),
+        md_bg_color=(1, 1, 1, 1),
+    )
+
+    retry_button.bind(
+        on_release=lambda *args: dialog.dismiss()
+    )
+
+    dialog.open()
+
+
 class HoverButton(Button):
     hovered=BooleanProperty(False)
     def __init__(self, **kwargs):
@@ -293,6 +357,8 @@ class FlashScreen(Screen):
     def __init__(self,**kwargs):
         super().__init__(**kwargs)
         self.loading_event = None
+        self.internet_checked = False
+        self.internet_connected = False
 
     def on_enter(self,*args):
         Clock.schedule_once(
@@ -300,14 +366,84 @@ class FlashScreen(Screen):
             0
         )
 
-    def initialize_flash_screen(self,dt):
-        self.background_animate()
+    def check_internet_thread(self):
+        
+        app=App.get_running_app()
+        
+        result=app.check_internet_connection()
+        connected=result[0]
+        if connected:
+
+            Clock.schedule_once(
+            lambda dt:self.check_internet_success(),
+                0
+            )
+        else:
+            Clock.schedule_once(
+                lambda dt:self.check_internet_fail(),
+                0
+            )
+    
+    def check_internet(self):
+        threading.Thread(
+            target=self.check_internet_thread,
+            daemon=True
+        ).start()
+    
+    def check_internet_fail(self):
+        self.internet_checked = True
+        self.internet_connected = False
+        self.ids.flash_loader.stop()
+
+        self.ids.flash_loading_overlay.opacity = 0
+        self.ids.flash_loading_overlay.size_hint = (0, 0)
+        self.ids.flash_loading_overlay.disabled = True
+
+        if self.loading_event is not None:
+            self.loading_event.cancel()
+            self.loading_event = None
+
+
+        show_internet_connection_popup(
+            title="No Internet Connection",
+            message="Please connect to the internet to use Wisher."
+        )
+
+    def check_internet_success(self):
+        self.internet_checked=True
+        self.internet_connected=True
+        self.ids.flash_loader.stop()
+        self.ids.flash_loading_overlay.opacity=0
+        self.ids.flash_loading_overlay.size_hint=0,0
+        self.ids.flash_loading_overlay.disabled=True
+
+        # Now start the actual flash-screen loading
         self.ids.progress_bar.value = 0
 
-        self.loading_event = Clock.schedule_interval(
+        if self.loading_event is None:
+            self.loading_event = Clock.schedule_interval(
             self.update_loading,
             0.05
         )
+
+    def initialize_flash_screen(self,dt):
+        self.internet_checked = False
+        self.internet_connected = False
+        self.background_animate()
+        self.ids.progress_bar.value = 0
+
+        self.ids.flash_loader.start()
+        self.ids.flash_loading_overlay.size_hint=1,1
+        self.ids.flash_loading_overlay.opacity=1
+        self.ids.flash_loading_overlay.disabled=False
+        # self.loading_event = Clock.schedule_interval(
+        #     self.update_loading,
+        #     0.05
+        # )
+    
+        self.check_internet()
+
+            
 
     def background_animate(self):
         background_logo = self.ids.background_logo
@@ -407,18 +543,39 @@ class FlashScreen(Screen):
         self.ids.progress_bar.value += 1
 
         if self.ids.progress_bar.value >= self.ids.progress_bar.max:
-            self.loading_event.cancel()
-            app=App.get_running_app()
-            if app.restore_login():
-                self.manager.current = "home"
-            else:
-                self.manager.current = "login"
+            if not self.internet_checked:
+                self.ids.progress_bar.value = self.ids.progress_bar.max-1
+                return True
+            if self.internet_connected:
 
-            return False
+                self.loading_event.cancel()
+                self.loading_event = None
+
+                self.ids.flash_loader.stop()
+
+                self.ids.flash_loading_overlay.opacity = 0
+                self.ids.flash_loading_overlay.size_hint = (0, 0)
+                self.ids.flash_loading_overlay.disabled = True
+                app=App.get_running_app()
+                if app.restore_login():
+                    self.manager.current = "home"
+                else:
+                    self.manager.current = "login"
+
+                return False
+            else:
+                # Internet failed
+                self.loading_event.cancel()
+                self.loading_event = None
+                return False
 
         return True
 
 class LoginScreen(Screen):
+
+    def __init__(self,**kwargs):
+        super().__init__(**kwargs)
+        self.email=""
 
     def toggle_password(self):
         password_field=self.ids.login_password
@@ -426,11 +583,11 @@ class LoginScreen(Screen):
 
         password_field.password= not password_field.password
         if password_field.password:
-            visibility_btn.background_normal="image/visibility_off_30.png"
-            visibility_btn.background_down="image/visibility_off_30.png"
+            visibility_btn.background_normal=resource_path("image/visibility_off_30.png")
+            visibility_btn.background_down=resource_path("image/visibility_off_30.png")
         else:
-            visibility_btn.background_normal="image/visibility_on_30.png"
-            visibility_btn.background_down="image/visibility_on_30.png"
+            visibility_btn.background_normal=resource_path("image/visibility_on_30.png")
+            visibility_btn.background_down=resource_path("image/visibility_on_30.png")
 
     def signin_user(self):
         conn1=sqlite3.connect("user.db")
@@ -482,6 +639,76 @@ class LoginScreen(Screen):
         personalize.load_settings()
 
 
+    def send_generated_password_for_google(self):
+
+        email=self.email
+        password=generate_password
+        load_dotenv()
+        try:
+            with smtplib.SMTP("smtp.gmail.com",587,timeout=10) as connection:
+                connection.starttls()
+                connection.login(user=os.getenv("MY_EMAIL"),password=os.getenv("MY_PASSWORD"))
+                connection.sendmail(
+                from_addr=os.getenv("MY_EMAIL"),
+                to_addrs=email,
+                msg=f"""Subject:Google Login\n
+You have successfully logged in using Google.\n
+Your email is {email}.\n
+Your temporary password is {password}.\n
+Please change your password after logging in with google and create your own for security reasons.\n 
+How to change password: Go to login -> click on forgot password -> enter your email -> enter the OTP sent to your email -> set a new password."""
+                )
+
+            Clock.schedule_once(
+                lambda dt: self.google_password_mail_success(),
+                0
+            )
+
+        except Exception as e:
+            error_message=str(e)
+
+            Clock.schedule_once(
+                lambda dt: self.google_password_mail_failed(error_message),
+                0
+            )
+
+    def google_loading_start(self):
+        self.ids.signin_otp_loader.start()
+        self.ids.signin_otp_loading_overlay.opacity=1
+        self.ids.signin_otp_loading_overlay.disabled=False
+        self.ids.signin_otp_loading_overlay.size_hint=1,1
+
+    def google_password_mail_success(self):
+        self.ids.signin_otp_loader.stop()
+        self.ids.signin_otp_loading_overlay.opacity = 0
+        self.ids.signin_otp_loading_overlay.disabled = True
+        self.ids.signin_otp_loading_overlay.size_hint=0,0
+
+        # show_popup(
+        #     title="Google Login",
+        #     message="Password sent successfully to your Gmail."
+        # )
+        print("Password sent successfully to your gmail.")
+
+        Clock.schedule_once(
+                        lambda dt: setattr(
+                            self.manager,
+                            "current",
+                            "welcome"
+                        ),
+                        0
+                    )
+
+    def google_password_mail_failed(self, error_message):
+        self.ids.signin_otp_loader.stop()
+        self.ids.signin_otp_loading_overlay.opacity = 0
+        self.ids.signin_otp_loading_overlay.disabled = True
+        self.ids.signin_otp_loading_overlay.size_hint=0,0
+
+        show_popup(
+            title="Google Login",
+            message=f"Failed to send password:\n{error_message}"
+        )
 
     def start_google_login(self):
         threading.Thread(
@@ -494,7 +721,7 @@ class LoginScreen(Screen):
         try:
             conn2=sqlite3.connect("user.db")
             cursor2=conn2.cursor()
-            flow=InstalledAppFlow.from_client_secrets_file("client_secret.json",
+            flow=InstalledAppFlow.from_client_secrets_file(resource_path("client_secret.json"),
                                                            scopes=[
                                                                "openid",
                                                                "https://www.googleapis.com/auth/userinfo.email",
@@ -516,7 +743,8 @@ class LoginScreen(Screen):
 
             id_info = id_token.verify_oauth2_token(
                 creds.id_token,
-                Request()
+                Request(),
+                clock_skew_in_seconds=5
             )
             response=requests.get("https://people.googleapis.com/v1/people/me?",
                                   headers={"Authorization": f"Bearer {creds.token}"
@@ -524,7 +752,8 @@ class LoginScreen(Screen):
                                   )
             response.json()
             name=id_info.get("name","")
-            email=id_info.get("email","")
+            self.email=id_info.get("email","")
+            password=generate_password
 
             cursor2.execute("""
             CREATE TABLE IF NOT EXISTS users(
@@ -537,56 +766,93 @@ class LoginScreen(Screen):
                 """)
 
             #Save into database
-            cursor2.execute("SELECT * FROM users WHERE email=?",(email,)
+            cursor2.execute("SELECT * FROM users WHERE email=?",(self.email,)
                            )
             user = cursor2.fetchone()
 
             if user is None:
                 cursor2.execute("""
                                 INSERT INTO users(name, email, phone, password) VALUES(?,?,?,?)""",
-                                (name, email, "", "")
+                                (name, self.email, "", password)
                                 )
                 conn2.commit()
 
+                Clock.schedule_once(
+                    lambda dt:self.google_loading_start(),
+                    0
+                    )
+                threading.Thread(target=self.send_generated_password_for_google,daemon=True).start()
+
+                cursor2.execute("SELECT * FROM users WHERE email=?",(self.email,))
+                user = cursor2.fetchone()
+    
+                # store current user
+                current_user["id"] = user[0]
+                current_user["name"] = user[1]
+                current_user["email"] = user[2]
+                current_user["phone"] = user[3]
+
+                conn24 = sqlite3.connect("user.db")
+                cursor24 = conn24.cursor()
+                cursor24.execute("""
+                            INSERT OR REPLACE INTO login_session
+                            (id, user_id, is_logged_in)
+                            VALUES (1, ?, 1)
+                        """, (current_user["id"],))
+                
+                conn24.commit()
+                conn24.close()
 
             else:
                 cursor2.execute("""
-                                UPDATE users SET name=?,email=? WHERE email=?""", (name, email, email)
+                                UPDATE users SET name=?,email=? WHERE email=?""", (name, self.email,self.email)
                                 )
                 conn2.commit()
                 #
-            cursor2.execute("SELECT * FROM users WHERE email=?",(email,))
-            user = cursor2.fetchone()
+                cursor2.execute("SELECT * FROM users WHERE email=?",(self.email,))
+                user = cursor2.fetchone()
 
-            # store current user
-            current_user["id"] = user[0]
-            current_user["name"] = user[1]
-            current_user["email"] = user[2]
-            current_user["phone"] = user[3]
+                # store current user
+                current_user["id"] = user[0]
+                current_user["name"] = user[1]
+                current_user["email"] = user[2]
+                current_user["phone"] = user[3]
 
-            conn2.close()
+                conn2.close()
 
-            print("Google Login Successful")
-            conn24 = sqlite3.connect("user.db")
-            cursor24 = conn24.cursor()
-            cursor24.execute("""
-                        INSERT OR REPLACE INTO login_session
-                        (id, user_id, is_logged_in)
-                        VALUES (1, ?, 1)
-                    """, (current_user["id"],))
+                
+                print("Google Login Successful")
 
-            conn24.commit()
-            conn24.close()
-            Clock.schedule_once(
-                lambda dt: setattr(
+                conn24 = sqlite3.connect("user.db")
+                cursor24 = conn24.cursor()
+                cursor24.execute("""
+                            INSERT OR REPLACE INTO login_session
+                            (id, user_id, is_logged_in)
+                            VALUES (1, ?, 1)
+                        """, (current_user["id"],))
+
+                conn24.commit()
+                conn24.close()
+                Clock.schedule_once(
+                    lambda dt:setattr
+                (
                     self.manager,
                     "current",
                     "welcome"
+                ),
+                0
                 )
-            )
+            
 
         except Exception as e:
-            print("Google Login Cancelled or Failed",e)
+            error_message=str(e)
+            Clock.schedule_once(
+                lambda dt: show_popup(
+                    title="Google Login",
+                    message=f"Google Login Cancelled or Failed: {error_message}"
+                ),
+                0
+            )
 
 
 
@@ -598,11 +864,23 @@ class SignUpScreen(Screen):
 
         password_field.password= not password_field.password
         if password_field.password:
-            visibility_btn.background_normal="image/visibility_off_30.png"
-            visibility_btn.background_down="image/visibility_off_30.png"
+            visibility_btn.background_normal=resource_path("image/visibility_off_30.png")
+            visibility_btn.background_down=resource_path("image/visibility_off_30.png")
         else:
-            visibility_btn.background_normal="image/visibility_on_30.png"
-            visibility_btn.background_down="image/visibility_on_30.png"
+            visibility_btn.background_normal=resource_path("image/visibility_on_30.png")
+            visibility_btn.background_down=resource_path("image/visibility_on_30.png")
+    
+    def toggle_confirm_password(self):
+        password_field=self.ids.signup_confirm_password
+        visibility_btn=self.ids.confirm_password_visibility
+
+        password_field.password= not password_field.password
+        if password_field.password:
+            visibility_btn.background_normal=resource_path("image/visibility_off_30.png")
+            visibility_btn.background_down=resource_path("image/visibility_off_30.png")
+        else:
+            visibility_btn.background_normal=resource_path("image/visibility_on_30.png")
+            visibility_btn.background_down=resource_path("image/visibility_on_30.png")
 
     def signup_user(self):
         conn1=sqlite3.connect("user.db")
@@ -612,37 +890,64 @@ class SignUpScreen(Screen):
         email=self.ids.signup_email.text.strip().lower()
         phone=self.ids.signup_phone.text
         password=self.ids.signup_password.text
+        confirm_password=self.ids.signup_confirm_password.text
+
         # Empty field check
-        if name=="" and email=="" and phone=="" and password=="":
+        if name=="" or email=="" or phone=="" or password=="" or confirm_password=="":
             show_popup(title="required",message="Please fill all fields")
             return
 
+        if "@" not in email or "." not in email:
+            show_popup(title="Invalid Email", message="Please enter a valid email address.")
+            self.ids.signup_email.text = ""
+            return
+
+        if not phone.isdigit() or len(phone) != 10:
+            show_popup(title="Invalid Phone Number", message="Please enter a valid 10-digit phone number.")
+            self.ids.signup_phone.text = ""
+            return
+
+        if len(password) < 8 or not any(c.isupper() for c in password) or not any(c.islower() for c in password) or not any(c.isdigit() for c in password) or not any(c in "!@#$%^&*()-+" for c in password):
+            show_popup(title="Weak Password", message="Password must be at least 8 characters long.\nIt should contain at least one uppercase letter, one lowercase letter, one digit, and one special character.")
+            self.ids.signup_password.text = ""
+            self.ids.signup_confirm_password.text = ""
+            return
+
         cursor1.execute("SELECT * FROM users WHERE email=?",(email,))
-        existing = cursor1.fetchone()
-        if existing:
-            show_popup(title="",message="Email already exists")
+        user = cursor1.fetchone()
+        if user:
+            show_popup(title="",message="User already exists. Please Login.")
             self.ids.signup_name.text = ""
             self.ids.signup_email.text = ""
             self.ids.signup_phone.text = ""
             self.ids.signup_password.text = ""
-        else:
-            (cursor1.execute
-             ("INSERT INTO users (name, email, phone, password) VALUES(?,?,?,?)",(name,email,phone,password)
-                ))
-            conn1.commit()
-            show_popup(title="",message="Signup Successful")
-            self.manager.current = "login"
-            self.ids.signup_name.text = ""
-            self.ids.signup_email.text = ""
-            self.ids.signup_phone.text = ""
+            self.ids.signup_confirm_password.text = ""
+            return
+    
+        if password != confirm_password:
+            show_popup(title="",message="Passwords do not match. Please re-enter.")
             self.ids.signup_password.text = ""
+            self.ids.signup_confirm_password.text = ""
+            return
+        (cursor1.execute
+         ("INSERT INTO users (name, email, phone, password) VALUES(?,?,?,?)",(name,email,phone,password)
+            ))
+        conn1.commit()
+        show_popup(title="",message="Signup Successful")
+        self.manager.current = "login"
+        self.ids.signup_name.text = ""
+        self.ids.signup_email.text = ""
+        self.ids.signup_phone.text = ""
+        self.ids.signup_password.text = ""
+        self.ids.signup_confirm_password.text = ""
 
     def start_google_signup(self):
         threading.Thread(target=self.google_signup,daemon=True).start()
 
     def google_signup(self):
         try:
-            flow=InstalledAppFlow.from_client_secrets_file("client_secret.json",
+
+            flow=InstalledAppFlow.from_client_secrets_file(resource_path("client_secret.json"),
                                                            scopes=[
                                                                "openid",
                                                                "https://www.googleapis.com/auth/userinfo.email",
@@ -699,7 +1004,7 @@ class SignUpScreen(Screen):
                 current_user["name"]=name
                 current_user["email"]=email
                 Clock.schedule_once(
-                lambda dt:show_popup(title="error",message="username already exists\n Signing in...")
+                lambda dt:show_popup(title="error",message="user already exists.\n Signing in...")
                 )
                 Clock.schedule_once(
                     lambda dt: setattr(
@@ -714,6 +1019,25 @@ class SignUpScreen(Screen):
             self.manager.current = "signup"
 
 
+class TouchBlocker(FloatLayout):
+
+    def on_touch_down(self, touch):
+        if self.collide_point(*touch.pos):
+            return True
+
+        return super().on_touch_down(touch)
+
+    def on_touch_move(self, touch):
+        if self.collide_point(*touch.pos):
+            return True
+
+        return super().on_touch_move(touch)
+
+    def on_touch_up(self, touch):
+        if self.collide_point(*touch.pos):
+            return True
+
+        return super().on_touch_up(touch)
 
 class ForgotPasswordScreen(Screen):
     generated_otp=""
@@ -721,17 +1045,149 @@ class ForgotPasswordScreen(Screen):
     timer_event=None
     tim= int(30)
 
+    def reset_forgot_password_screen(self):
+        # Stop OTP timer
+        if self.timer_event:
+            self.timer_event.cancel()
+            self.timer_event = None
+
+        # Clear OTP state
+        self.generated_otp = None
+        self.otp_expiry = None
+
+        # Clear fields
+        self.ids.fp_email.text = ""
+        self.ids.otp_input.text = ""
+        self.ids.fp_password.text = ""
+        self.ids.fp_confirm_password.text = ""
+        self.ids.all_widget_parent.height = dp(250)
+
+        self.ids.email_parent.opacity = 1
+        self.ids.email_parent.disabled = False
+        self.ids.email_parent.height = dp(50)
+        self.ids.email_parent.width = dp(355)
+        self.ids.send_otp.opacity = 1
+        self.ids.send_otp.disabled = False
+
+        # Hide OTP section
+        self.ids.otp_parent.opacity = 0
+        self.ids.otp_parent.disabled=True
+
+        
+        self.ids.verification_parent.opacity = 0
+        self.ids.verification_parent.disabled = True
+        self.ids.verification_parent.height = 0
+        self.ids.verification_parent.width = 0
+
+        # Hide password fields
+        self.ids.fp_password.opacity = 0
+        self.ids.fp_password.disabled = True
+        self.ids.fp_password.height = 0
+        self.ids.fp_password.width = 0
+
+        self.ids.fp_confirm_password.opacity = 0
+        self.ids.fp_confirm_password.disabled = True
+        self.ids.fp_confirm_password.height = 0
+        self.ids.fp_confirm_password.width = 0
+
+        self.ids.fp_reset_btn.opacity = 0
+        self.ids.fp_reset_btn.disabled = True
+        self.ids.fp_reset_btn.height = 0
+        self.ids.fp_reset_btn.width = 0
+
+        # Keep Reset Password label visible
+        # self.ids.reset_password_label.opacity = 1
+
     def toggle_password(self):
         password_field=self.ids.new_password
-        visibility_btn=self.ids.new_visibility
+        visibility_btn=self.ids.password_visibility
 
-        password_field.password= not password_field.password
+        password_field.password = not password_field.password
         if password_field.password:
-            visibility_btn.background_normal="image/visibility_off_30.png"
-            visibility_btn.background_down="image/visibility_off_30.png"
+            visibility_btn.background_normal=resource_path("image/visibility_off_30.png")
+            visibility_btn.background_down=resource_path("image/visibility_off_30.png")
         else:
-            visibility_btn.background_normal="image/visibility_on_30.png"
-            visibility_btn.background_down="image/visibility_on_30.png"
+            visibility_btn.background_normal=resource_path("image/visibility_on_30.png")
+            visibility_btn.background_down=resource_path("image/visibility_on_30.png")
+
+    def toggle_confirm_password(self):
+            password_field=self.ids.confirm_password
+            visibility_btn=self.ids.confirm_password_visibility
+    
+            password_field.password = not password_field.password
+            if password_field.password:
+                visibility_btn.background_normal=resource_path("image/visibility_off_30.png")
+                visibility_btn.background_down=resource_path("image/visibility_off_30.png")
+            else:
+                visibility_btn.background_normal=resource_path("image/visibility_on_30.png")
+                visibility_btn.background_down=resource_path("image/visibility_on_30.png")
+
+    def send_otp_mail(self):
+        #send email
+        email=self.ids.fp_email.text
+        load_dotenv()
+        try:
+            with smtplib.SMTP("smtp.gmail.com",587) as connection:
+                connection.starttls()
+                connection.login(user=os.getenv("MY_EMAIL"),password=os.getenv("MY_PASSWORD"))
+                connection.sendmail(from_addr=os.getenv("MY_EMAIL"),
+                                    to_addrs=email,
+                                    msg=f"""Subject:OTP Verification\n
+Your OTP is {str(self.generated_otp)}
+This OTP will expire in 30 seconds."""
+                                    )
+                Clock.schedule_once(self.otp_mail_success, 0)
+        
+        except Exception as e:
+            Clock.schedule_once(self.otp_mail_failed(error_message=str(e)), 0)
+
+
+    def otp_mail_success(self, dt):
+
+        # Stop and hide loader
+        self.ids.otp_loader.stop()
+        self.ids.otp_loading_overlay.size_hint=0,0
+        self.ids.otp_loading_overlay.opacity = 0
+        self.ids.otp_loading_overlay.disabled = True
+
+        self.ids.send_otp.opacity = 0
+        self.ids.send_otp.disabled = True
+        self.ids.all_widget_parent.height=dp(400)
+        self.ids.otp_parent.opacity = 1
+        self.ids.otp_parent.disabled=False
+        self.ids.otp_input.disabled = False
+        self.ids.otp_parent.height=dp(50)
+        self.ids.verification_parent.opacity=1
+        self.ids.verification_parent.disabled=False
+        self.ids.verification_parent.height=dp(40)
+        
+        self.ids.verify_btn.opacity = 1
+        self.ids.verify_btn.disabled = False
+        self.ids.resend_btn.opacity = 1
+        self.ids.resend_btn.disabled = False
+
+        self.start_resend_timer()
+
+        show_popup(
+            title="Sent",
+            message="OTP sent successfully"
+        )
+
+    def otp_mail_failed(self, error_message):
+
+        # Stop and hide loader
+        self.ids.otp_loader.stop()
+        self.ids.otp_loading_overlay.size_hint=0,0
+        self.ids.otp_loading_overlay.opacity = 0
+        self.ids.otp_loading_overlay.disabled = True
+
+        # Allow user to try again
+        self.ids.send_otp.disabled = False
+
+        show_popup(
+            title="Error",
+            message=f"Failed to send OTP:\n{error_message}"
+        )
 
     def send_otp(self):
 
@@ -740,33 +1196,34 @@ class ForgotPasswordScreen(Screen):
             show_popup(title="",message="Enter your email")
             return
 
+        if "@" not in email or "." not in email:
+            show_popup(title="Invalid Email", message="Please enter a valid email address.")
+            self.ids.fp_email.text = ""
+            return
+
         self.generated_otp=str(random.randint(10000,99999))
         print(f"OTP: {self.generated_otp}")
 
-        #send email
-        with smtplib.SMTP("smtp.gmail.com",587) as connection:
-            connection.starttls()
-            connection.login(user=my_email,password=my_password)
-            connection.sendmail(from_addr=my_email,
-                                to_addrs=email,
-                                msg=f"""Subject:OTP Verification\n
-                                Your OTP is {str(self.generated_otp)}
-                                This OTP will expire in 30 seconds."""
-                                )
-            show_popup(title="Sent", message="OTP sent")
+        # Show loader
+        self.ids.otp_loading_overlay.size_hint=1,1
+        self.ids.otp_loading_overlay.opacity = 1
+        self.ids.otp_loading_overlay.disabled = False
+        self.ids.otp_loader.start()
+
+        threading.Thread(
+            target=self.send_otp_mail,
+            daemon=True
+            ).start()
 
         self.otp_expiry=datetime.now()+timedelta(seconds=int(30))
-        self.ids.otp_input_box.opacity = 1
-        self.ids.otp_input.disabled = False
-
-        self.ids.verify_btn.opacity = 1
-        self.ids.verify_btn.disabled = False
-        self.start_resend_timer()
-
-
+        
     def verify_otp(self):
         entered_otp=self.ids.otp_input.text
 
+        if not entered_otp:
+            show_popup(title="",message="Enter OTP")
+            return
+        
         if datetime.now()>self.otp_expiry:
             show_popup(title="",message="OTP expired\nPlease resend OTP")
             self.ids.resend_btn.opacity = 1
@@ -776,11 +1233,32 @@ class ForgotPasswordScreen(Screen):
         elif entered_otp==self.generated_otp:
             show_popup(title="OTP Verification",message="Email Verified Successfully")
 
+            self.ids.email_parent.opacity = 0
+            self.ids.email_parent.disabled = True
+            self.ids.email_parent.height = 0
+            self.ids.email_parent.width = 0
+
+            self.ids.otp_parent.opacity = 0
+            self.ids.otp_parent.disabled=True
+            self.ids.otp_parent.height = 0
+            self.ids.otp_parent.width = 0
+
+            self.ids.verification_parent.opacity = 0
+            self.ids.verification_parent.disabled = True
+            self.ids.verification_parent.height = 0
+            self.ids.verification_parent.width = 0
+
             self.ids.fp_password.opacity = 1
             self.ids.fp_password.disabled = False
+            self.ids.fp_password.height = dp(50)
+            self.ids.fp_confirm_password.opacity = 1
+            self.ids.fp_confirm_password.disabled = False
+            self.ids.fp_confirm_password.height = dp(50)
 
             self.ids.fp_reset_btn.opacity = 1
             self.ids.fp_reset_btn.disabled = False
+            self.ids.fp_reset_btn.height = dp(50)
+
         else:
             show_popup(title="OTP Verification",message="Invalid OTP")
 
@@ -809,6 +1287,9 @@ class ForgotPasswordScreen(Screen):
         return True
 
     def resend_otp(self):
+        # self.ids.otp_loading_overlay.opacity = 1
+        # self.ids.otp_loading_overlay.disabled = False
+        # self.ids.otp_loader.start()
         self.send_otp()
         self.start_resend_timer()
 
@@ -820,9 +1301,26 @@ class ForgotPasswordScreen(Screen):
 
         email = self.ids.fp_email.text.strip()
         new_password = self.ids.new_password.text.strip()
+        confirm_password = self.ids.confirm_password.text.strip()
 
-        if  email=="" or new_password == "":
+        if  email=="" or new_password == "" or confirm_password == "":
             show_popup("required", "⚠ Please fill all fields")
+            return
+
+        if "@" not in email or "." not in email:
+            show_popup("Invalid Email", "⚠ Please enter a valid email address.")
+            self.ids.fp_email.text = ""
+            return
+
+        if new_password != confirm_password:
+            show_popup("Password Mismatch", "⚠ Passwords do not match.")
+            self.ids.new_password.text = ""
+            self.ids.confirm_password.text = ""
+            return
+
+        if len(new_password) < 8 or not any(c.isupper() for c in new_password) or not any(c.islower() for c in new_password) or not any(c.isdigit() for c in new_password) or not any(c in "!@#$%^&*()-+" for c in new_password):
+            show_popup("Weak Password", "⚠ Password must be at least 8 characters long.\nIt should contain at least one uppercase letter, one lowercase letter, one digit, and one special character.")
+            self.ids.new_password.text = ""
             return
 
         # check user exists
@@ -836,15 +1334,15 @@ class ForgotPasswordScreen(Screen):
         # update password
         cursor.execute(
             "UPDATE users SET password=? WHERE email=?",
-            (new_password,email)
+            (confirm_password,email)
         )
         conn.commit()
         conn.close()
         show_popup("Success", "Password updated")
         self.manager.current = "login"
-        self.ids.fp_email.text=""
         self.ids.new_password.text=""
-        self.ids.otp_input.text=""
+        self.ids.confirm_password.text=""
+        self.reset_forgot_password_screen()
 
 class DateTextInput(TextInput):
 
@@ -876,6 +1374,15 @@ class AddWishScreen(Screen):
 
     selected_platforms = StringProperty("")
     side_panel_color = ColorProperty((0.176, 0.106, 0.306, 1))
+
+    def wish_box_resize(self):
+        wish_box=self.ids.wish_box
+        wish_message=self.ids.wish_message.text
+        if len(wish_message)>85:
+            wish_box.height=dp(75)+dp(30)
+            
+        else:
+            wish_box.height=dp(75)
 
     def refresh_language(self):
         t = App.get_running_app().language.translate
@@ -933,12 +1440,12 @@ class AddWishScreen(Screen):
             on_release=lambda x: self.dialog.dismiss()
 
         )
-        # self.dialog.bind(
-        #     on_dismiss=self.platform_dialog_dismissed
-        # )
+        self.dialog.bind(
+            on_dismiss=self.platform_dialog_dismissed
+        )
 
         self.dialog.open()
-        #self.ids.arrow_image.icon="chevron-up"
+        self.ids.arrow_image.icon="chevron-up"
 
     def platform_dialog_dismissed(self,*args):
         self.ids.arrow_image.icon="chevron-down"
@@ -947,6 +1454,8 @@ class AddWishScreen(Screen):
         self.check_gmail_connection()
         self.reset_hover_buttons()
 
+
+
     def on_leave(self, *args):
         self.reset_hover_buttons()
 
@@ -954,6 +1463,8 @@ class AddWishScreen(Screen):
         for widget in self.walk():
             if isinstance(widget, HoverButton):
                 widget.reset_hover()
+
+
 
     def check_gmail_connection(self):
 
@@ -988,8 +1499,8 @@ class AddWishScreen(Screen):
             "SELECT * FROM gmail_tokens WHERE user_email=?",(user_email,)
         )
         row=cursor20.fetchone()
-
         conn20.close()
+
         gmail_btn=self.ids.gmail_btn
         if row is not None:
             # gmail already connected
@@ -1000,15 +1511,17 @@ class AddWishScreen(Screen):
         gmail_btn.text = "Connecting..."
 
         # Run Oauth in background thread
-        thread=threading.Thread(target=self.gmail_oauth_thread, args=(user_email,),daemon=True).start()
-        # Watchdog: reset UI if OAuth doesn't finish
-        # self._gmail_timeout_event = Clock.schedule_once(
-        #     self.gmail_connection_timeout,
-        #     5
-        # )
+        threading.Thread(target=self.gmail_oauth_thread, args=(user_email,),daemon=True).start()
+        
 
     def gmail_oauth_thread(self,user_email):
-        success=save_credentials(user_email)
+        try:
+            success=save_credentials(user_email)
+        except Exception as e:
+            print(f"Gmail OAUTH error: {repr(e)}")
+            success = False
+
+        
         # Return to kivy main thread
         Clock.schedule_once(
             lambda dt:self.gmail_oauth_finished(success),
@@ -1016,11 +1529,6 @@ class AddWishScreen(Screen):
         )
 
     def gmail_oauth_finished(self,success):
-
-        # Cancel watchdog
-        # if hasattr(self, "_gmail_timeout_event"):
-        #     self._gmail_timeout_event.cancel()
-        #     self._gmail_timeout_event = None
 
         gmail_btn=self.ids.gmail_btn
         if success:
@@ -1034,22 +1542,6 @@ class AddWishScreen(Screen):
                 title="Gmail Connection",message="Gmail connection was cancelled.\n"
                                                  "Please try again."
             )
-
-    # def gmail_connection_timeout(self, dt):
-    #
-    #     gmail_btn = self.ids.gmail_btn
-    #
-    #     # Reset button
-    #     gmail_btn.text = "Connect Gmail"
-    #     gmail_btn.disabled = False
-    #
-    #     self._gmail_timeout_event = None
-    #
-    #     show_popup(
-    #         title="Gmail Connection",
-    #         message="Gmail connection was cancelled or timed out.\n"
-    #                 "Please try again."
-    #     )
 
     def email_checkbox(self,checkbox,active):
 
@@ -1176,8 +1668,8 @@ class AddWishScreen(Screen):
                 duration=0.3,
                 t="out_cubic"
             ).start(side_panel)
-            menu_btn.background_normal="image/close.png"
-            menu_btn.background_down="image/close.png"
+            menu_btn.background_normal=resource_path("image/close.png")
+            menu_btn.background_down=resource_path("image/close.png")
             self.open_menu=True
 
         else:
@@ -1202,8 +1694,8 @@ class AddWishScreen(Screen):
             over_lay.size_hint_x=0
             over_lay.size_hint_y=0
             side_panel.disabled = True
-            menu_btn.background_normal="image/menu.png"
-            menu_btn.background_down="image/menu.png"
+            menu_btn.background_normal=resource_path("image/menu.png")
+            menu_btn.background_down=resource_path("image/menu.png")
             self.open_menu=False
 
     def schedule_wish(self):
@@ -1218,14 +1710,16 @@ class AddWishScreen(Screen):
         subject=self.ids.wish_subject.text.strip()
         date = self.ids.wish_date.text.strip()
         tim = self.ids.wish_time.text.strip()
+        
 
         if not all([name, phone,recipient_email, message, date, tim]):
-            show_popup("required", "⚠ Fill all fields")
+            show_popup("required", "Fill all fields")
             return
 
-        elif not mode == self.selected_platforms:
+        if not mode == self.selected_platforms:
             show_popup(title="required",message="Select Platform")
             return
+        
 
         #validate date and time
         try:
@@ -1234,24 +1728,6 @@ class AddWishScreen(Screen):
         except ValueError as e:
             show_popup(title="invalid",message=f"invalid date/time format {e}")
             return
-
-        # Save wish
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS wishes(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id,
-        name TEXT,
-        phone TEXT,
-        recipient_email TEXT,
-        message TEXT,
-        subject TEXT,
-        date TEXT,
-        time TEXT,
-        Platform TEXT,
-        sent INTEGER DEFAULT 0,
-        status TEXT
-        )
-        """)
 
         cursor.execute(
             "INSERT INTO wishes(user_id,name,phone,recipient_email,message,subject,date,time,Platform) VALUES(?,?,?,?,?,?,?,?,?)",
@@ -1337,22 +1813,26 @@ class HomeScreen(Screen):
         self.menu_open = False
 
     def logout(self):
-        conn24 = sqlite3.connect("user.db")
-        cursor24 = conn24.cursor()
+        try:
+            conn24 = sqlite3.connect("user.db")
+            cursor24 = conn24.cursor()
 
-        cursor24.execute("""
-                UPDATE login_session
-                SET is_logged_in=0
-                WHERE user_id=?
-            """,(current_user["id"],))
+            cursor24.execute("""
+                    UPDATE login_session
+                    SET is_logged_in=0
+                    WHERE user_id=?
+                """,(current_user["id"],))
 
-        conn24.commit()
-        # conn24.close()
+            conn24.commit()
+            conn24.close()
 
-        # Clear current user
-        current_user.clear()
+            # Clear current user
+            current_user.clear()
 
-        self.manager.current = "login"
+            self.manager.current = "login"
+
+        except Exception as e:
+            print("Logout Error:",e)
 
     def close_side_menu(self):
         if self.menu_open:
@@ -1381,8 +1861,8 @@ class HomeScreen(Screen):
                 t="out_cubic"
             ).start(side_panel)
             # change icon
-            menu_btn.background_normal="image/close.png"
-            menu_btn.background_down="image/close.png"
+            menu_btn.background_normal=resource_path("image/close.png")
+            menu_btn.background_down=resource_path("image/close.png")
             self.menu_open = True
         else:
 
@@ -1402,11 +1882,13 @@ class HomeScreen(Screen):
             over_lay.size_hint_y=0
             over_lay.disabled = True
             self.menu_open = False
-            menu_btn.background_normal="image/menu.png"
-            menu_btn.background_down="image/menu.png"
+            menu_btn.background_normal=resource_path("image/menu.png")
+            menu_btn.background_down=resource_path("image/menu.png")
 
     def on_pre_enter(self, *args):
         Clock.schedule_once(self.load_home_data,0)
+        Animation.cancel_all(self.ids.overlay)
+        Animation.cancel_all(self.ids.side_panel)
         self.ids.overlay.opacity = 0
         self.ids.overlay.disabled = True
         self.ids.side_panel.opacity = 0
@@ -1415,6 +1897,10 @@ class HomeScreen(Screen):
 
 
     def load_home_data(self,_dt):
+        if not current_user.get("id"):
+            show_popup(title="",message="No logged-in user")
+            self.manager.current = "login"
+            return
         self.total_wishes()
         self.pending_wishes()
         self.sent_wishes()
@@ -1428,6 +1914,7 @@ class HomeScreen(Screen):
             cursor8.execute("SELECT COUNT(*) FROM wishes WHERE user_id=?", (current_user["id"],))
             total = cursor8.fetchone()[0]
             self.ids.wish_number.text=str(total)
+            conn8.close()
         except Exception as e:
             print(e)
     def pending_wishes(self):
@@ -1437,6 +1924,7 @@ class HomeScreen(Screen):
             cursor9.execute("""SELECT COUNT(*) FROM wishes WHERE status='Pending' and user_id=?""", (current_user["id"],))
             total=cursor9.fetchone()[0]
             self.ids.pending_number.text=str(total)
+            conn9.close()
         except Exception as e:
             print(e)
 
@@ -1447,6 +1935,7 @@ class HomeScreen(Screen):
             cursor10.execute("SELECT COUNT(*) FROM wishes WHERE status='Success' and user_id=?", (current_user["id"],))
             total=cursor10.fetchone()[0]
             self.ids.sent_number.text=str(total)
+            conn10.close()
         except Exception as e:
             print(e)
 
@@ -1457,14 +1946,17 @@ class HomeScreen(Screen):
             cursor11.execute("SELECT COUNT(*) FROM wishes WHERE status='Failed' and user_id=?", (current_user["id"],))
             total=cursor11.fetchone()[0]
             self.ids.failed_number.text=str(total)
+            conn11.close()
         except Exception as e:
             print(e)
 
     def on_enter(self,*args):
-
         self.reset_hover_buttons()
         full_name = str(current_user["name"]).split()
-        first_name = full_name[0]
+        if full_name:
+            first_name = full_name[0]
+        else:
+            first_name="Guest User"
         home_label = self.ids.home_label
         home_label.text=f"Welcome, {first_name}"
         self.ids.profile.text=first_name
@@ -1489,26 +1981,103 @@ class EditProfileScreen(Screen):
     timer_event = None
     tim = int(30)
 
+
     def on_pre_enter(self,*args):
+        conn24=sqlite3.connect("user.db")
+        cursor24=conn24.cursor()
+        cursor24.execute("SELECT * FROM users WHERE id=?", (current_user["id"],))
+        row=cursor24.fetchone()
+
         self.ids.full_name.text = current_user["name"]
         self.ids.email.text = current_user["email"]
         self.ids.phone.text = current_user["phone"]
+        self.ids.verified.text = str(row[5])
+        self.ids.phone_verified.text=str(row[6])
+
+        if str(row[5])!="verified":
+            self.ids.verify.opacity=1
+            self.ids.verify.disabled = False
+            self.ids.OTP.opacity = 0
+            self.ids.OTP.disabled = True
+            self.ids.verified.opacity = 0
+
+        else:
+            self.ids.verify.opacity=0
+            self.ids.verify.disabled = True
+            self.ids.OTP.opacity = 0
+            self.ids.OTP.disabled = True
+            self.ids.verified.opacity = 1
+            self.ids.verified.text="verified"
+            self.ids.verified.color= 0.13, 0.55, 0.25, 1
+
+        if str(row[6])!="verified":
+            self.ids.verify_phone.opacity=1
+            self.ids.verify_phone.disabled=False
+            self.ids.phone_OTP.opacity=0
+            self.ids.phone_OTP.disabled=True
+            self.ids.phone_verified.opacity=0
+        else:
+            self.ids.verify_phone.opacity=0
+            self.ids.verify_phone.disabled=True
+            self.ids.phone_OTP.opacity=0
+            self.ids.phone_OTP.disabled=True
+            self.ids.phone_verified.opacity=1
+            self.ids.phone_verified.text="verified"
+            self.ids.phone_verified.color=0.13, 0.55, 0.25, 1
+
+    def send_profile_email_verification_otp(self):
+        load_dotenv()
+        try:
+            with smtplib.SMTP("smtp.gmail.com", 587) as connection:
+                connection.starttls()
+                connection.login(user=os.getenv("MY_EMAIL"), password=os.getenv("MY_PASSWORD"))
+                connection.sendmail(
+                    from_addr=os.getenv("MY_EMAIL"),
+                    to_addrs=self.ids.email.text,
+                    msg=f"""Subject:OTP Verification\n
+Your OTP is {str(self.generated_otp)}
+This OTP will expire in 30 seconds."""
+                    )
+                Clock.schedule_once(
+                    lambda dt:self.profile_email_success(),
+                    0
+                )
+
+        except Exception as e:
+            print(e)
+            error_message=str(e)
+            Clock.schedule_once(
+                lambda dt:self.profile_email_failed(error_message),
+                0
+            )
+
+
+    def profile_email_success(self):
+        self.ids.profile_otp_loader.stop()
+        self.ids.profile_otp_loading_overlay.opacity=0
+        self.ids.profile_otp_loading_overlay.disabled=True
+        self.ids.profile_otp_loading_overlay.size_hint=0,0
+
+        show_popup(title="Sent", message="OTP sent")
+
+    def profile_email_failed(self,error_message):
+        self.ids.profile_otp_loader.stop()
+        self.ids.profile_otp_loading_overlay.opacity=0
+        self.ids.profile_otp_loading_overlay.disabled=True
+        self.ids.profile_otp_loading_overlay.size_hint=0,0
+
+        show_popup(title="Failed", message=error_message)
 
     def verify_email(self):
         self.generated_otp = str(random.randint(10000, 99999))
         print(f"OTP: {self.generated_otp}")
 
+        self.ids.profile_otp_loader.start()
+        self.ids.profile_otp_loading_overlay.opacity=1
+        self.ids.profile_otp_loading_overlay.disabled=False
+        self.ids.profile_otp_loading_overlay.size_hint=1,1
         # send email
-        with smtplib.SMTP("smtp.gmail.com", 587) as connection:
-            connection.starttls()
-            connection.login(user=my_email, password=my_password)
-            connection.sendmail(from_addr=my_email,
-                                to_addrs=self.ids.email.text,
-                                msg=f"""Subject:OTP Verification\n
-                                        Your OTP is {str(self.generated_otp)}
-                                        This OTP will expire in 30 seconds."""
-                                )
-            show_popup(title="Sent", message="OTP sent")
+        threading.Thread(target=self.send_profile_email_verification_otp,daemon=True).start()
 
         self.otp_expiry = datetime.now() + timedelta(seconds=int(30))
         self.ids.verify.opacity=0
@@ -1520,10 +2089,10 @@ class EditProfileScreen(Screen):
 
 
     def verify_otp(self,entered_otp):
-        # entered_otp=self.ids.OTP.text
 
         if datetime.now()>self.otp_expiry:
             show_popup(title="",message="OTP expired\nPlease Verify again.")
+            self.ids.OTP.text=""
             self.ids.OTP.opacity=0
             self.ids.OTP.disabled = True
             self.ids.verify.opacity = 1
@@ -1532,12 +2101,11 @@ class EditProfileScreen(Screen):
 
         elif entered_otp==self.generated_otp:
             show_popup(title="OTP Verification",message="Email Verified Successfully")
-
-            # self.ids.fp_password.opacity = 1
-            # self.ids.fp_password.disabled = False
-            #
-            # self.ids.fp_reset_btn.opacity = 1
-            # self.ids.fp_reset_btn.disabled = False
+            conn24=sqlite3.connect("user.db")
+            cursor24=conn24.cursor()
+            cursor24.execute("UPDATE users SET email_verification='verified' WHERE id=?", (current_user["id"],))
+            conn24.commit()
+            conn24.close()
             self.ids.OTP.opacity = 0
             self.ids.OTP.disabled = False
             self.ids.verified.opacity = 1
@@ -1564,6 +2132,148 @@ class EditProfileScreen(Screen):
         if self.tim <= 0:
             self.ids.verify.text="Verify"
             self.ids.verify.disabled = False
+            if self.timer_event:
+                self.timer_event.cancel()
+            return False
+        return True
+
+    def send_profile_phone_verification_otp(self):
+        load_dotenv()
+        try:
+            account_sid = os.getenv("ACCOUNT_SID")
+            auth_token = os.getenv("AUTH_TOKEN")
+            service_sid = os.getenv("TWILIO_SERVICE_SID")
+            client = Client(account_sid, auth_token)
+            phone=current_user["phone"]
+
+            if not phone.startswith("+"):
+                phone = f"+91{phone}"
+
+            verification=(client.verify.v2.services(service_sid).verifications.create(
+                to=phone,
+                channel="sms"
+            ))
+            print(f"Verification Status: {verification.status}")
+
+            # message = client.messages.create(
+            #     messaging_service_sid=os.getenv("TWILIO_SERVICE_SID"),
+            #     body=f"OTP is:{self.generated_otp}",
+            #     to=f'+91{current_user["phone"]}',
+            # )
+            # print(message.sid)
+            Clock.schedule_once(
+                lambda dt:self.profile_email_success(),
+                0
+            )
+        except Exception as e:
+            error_message=str(e)
+            Clock.schedule_once(
+                lambda dt:self.profile_email_failed(error_message),
+                0
+            )
+            
+
+    def verify_phone(self):
+        self.generated_otp = str(random.randint(10000, 99999))
+        print(f"OTP: {self.generated_otp}")
+        
+        self.ids.profile_otp_loader.start()
+        self.ids.profile_otp_loading_overlay.opacity=1
+        self.ids.profile_otp_loading_overlay.disabled=False
+        self.ids.profile_otp_loading_overlay.size_hint=1,1
+        # send email
+        threading.Thread(target=self.send_profile_phone_verification_otp,daemon=True).start()
+        
+        self.otp_expiry = datetime.now() + timedelta(seconds=int(30))
+        self.ids.verify_phone.opacity=0
+        self.ids.verify_phone.disabled = True
+        self.ids.phone_OTP.opacity = 1
+        self.ids.phone_OTP.disabled = False
+        
+        self.start_phone_resend_timer()
+
+    def verify_phone_otp(self,entered_phone_otp):
+    
+        if datetime.now()>self.otp_expiry:
+            show_popup(title="",message="OTP expired\nPlease Verify again.")
+            self.ids.phone_OTP.text=""
+            self.ids.phone_OTP.opacity=0
+            self.ids.phone_OTP.disabled = True
+            self.ids.verify_phone.opacity = 1
+            self.ids.verify_phone.disabled = False
+            self.ids.verify_phone.text = "Verify"
+
+        try:
+            load_dotenv()
+            account_sid = os.getenv("TWILIO_ACCOUNT_SID")
+            auth_token = os.getenv("TWILIO_AUTH_TOKEN")
+            service_sid = os.getenv("TWILIO_VERIFY_SERVICE_SID")
+
+            client = Client(
+                account_sid,
+                auth_token
+            )
+
+            phone = current_user["phone"].strip()
+
+            if not phone.startswith("+"):
+                phone = "+91" + phone
+
+            verification_check = (
+                client.verify
+                .v2
+                .services(service_sid)
+                .verification_checks
+                .create(
+                    to=phone,
+                    code=entered_phone_otp
+                )
+            )
+
+            print("Verification result:",
+                verification_check.status)
+    
+            # elif entered_phone_otp==self.generated_otp:
+            if verification_check.status == "approved":
+                conn24=sqlite3.connect("user.db")
+                cursor24=conn24.cursor()
+                cursor24.execute("UPDATE users SET phone_verification='verified' WHERE id=?", (current_user["id"],))
+                conn24.commit()
+                conn24.close()
+                self.ids.phone_OTP.opacity = 0
+                self.ids.phone_OTP.disabled = False
+                self.ids.verify_phone.opacity = 0
+                self.ids.verify_phone.disabled = True
+                self.ids.phone_verified.opacity = 1
+                self.ids.phone_verified.text="Verified"
+                self.ids.phone_verified.color= 0.13, 0.55, 0.25, 1
+                show_popup(title="OTP Verification",message="Phone Number Verified Successfully")
+            else:
+                show_popup(title="OTP Verification",message="Invalid OTP")
+    
+        except Exception as e:
+            error_message=str(e)
+            show_popup(title="Verification failed",message=f"Error: {error_message}")
+    
+    def start_phone_resend_timer(self):
+        self.tim=30
+        self.ids.verify_phone.disabled = True
+        self.ids.verify_phone.text = f"Verify ({self.tim}s)"
+        if self.timer_event:
+            self.timer_event.cancel()
+    
+        self.timer_event=Clock.schedule_interval(
+            self.update_phone_timer,
+            1
+        )
+    def update_phone_timer(self,_dt):
+        self.tim-=1
+        self.ids.verify_phone.text = (
+            f"Verify ({self.tim}s)"
+        )
+        if self.tim <= 0:
+            self.ids.verify_phone.text="Verify"
+            self.ids.verify_phone.disabled = False
             if self.timer_event:
                 self.timer_event.cancel()
             return False
@@ -1673,7 +2383,7 @@ class PersonalizeScreen(Screen):
         parent=self.ids.language_parent
 
         # Update the label text if you want
-        self.ids.language_label.text=language
+        self.ids.language_label.text=str(language)
         if self.ids.language_label.text=="English":
             self.ids.english_button.style="filled"
             # self.ids.english_button.md_bg_color = (0.4196, 0.2902, 0.6510, 1.0)
@@ -1735,18 +2445,18 @@ class PersonalizeScreen(Screen):
 
         if selected_theme=="midnight":
 
-            login.ids.image.source="image/midnight.png"
+            login.ids.image.source=resource_path("image/midnight.png")
             login.ids.login_email.foreground_color=(1,1,1,1)
             login.ids.login_password.foreground_color=(1,1,1,1)
 
-            signup.ids.image.source="image/midnight.png"
+            signup.ids.image.source=resource_path("image/midnight.png")
             signup.ids.signup_name.foreground_color=(1,1,1,1)
             signup.ids.signup_email.foreground_color=(1,1,1,1)
             signup.ids.signup_password.foreground_color=(1,1,1,1)
             signup.ids.signup_name.foreground_color=(1,1,1,1)
             signup.ids.signup_phone.foreground_color=(1,1,1,1)
 
-            addwish.ids.image.source="image/midnight.png"
+            addwish.ids.image.source=resource_path("image/midnight.png")
             addwish.ids.wish_name.foreground_color=(1,1,1,1)
             addwish.ids.wish_phone.foreground_color=(1,1,1,1)
             addwish.ids.wish_email.foreground_color=(1,1,1,1)
@@ -1757,7 +2467,7 @@ class PersonalizeScreen(Screen):
             addwish.side_panel_color = (0.0588, 0.0627, 0.1411, 1.0)
             addwish.ids.add_image.color=(1,1,1,1)
 
-            home.ids.image.source="image/midnight.png"
+            home.ids.image.source=resource_path("image/midnight.png")
             home.ids.total.color=(1,1,1,1)
             home.ids.wish_number.color=(1,1,1,1)
             home.ids.pending.color=(1,1,1,1)
@@ -1769,19 +2479,19 @@ class PersonalizeScreen(Screen):
             home.side_panel_color = (0.0588, 0.0627, 0.1411, 1.0)
             home.ids.add_image.color=(1,1,1,1)
 
-            forgotpassword.ids.image.source="image/midnight.png"
+            forgotpassword.ids.image.source=resource_path("image/midnight.png")
             forgotpassword.ids.fp_email.foreground_color = (1, 1, 1, 1)
             forgotpassword.ids.otp_input.foreground_color = (1, 1, 1, 1)
             forgotpassword.ids.new_password.foreground_color = (1, 1, 1, 1)
 
-            welcome.ids.image.source="image/midnight.png"
+            welcome.ids.image.source=resource_path("image/midnight.png")
 
-            editprofile.ids.image.source="image/midnight.png"
+            editprofile.ids.image.source=resource_path("image/midnight.png")
             editprofile.ids.full_name.foreground_color = (1, 1, 1, 1)
             editprofile.ids.email.foreground_color = (1, 1, 1, 1)
             editprofile.ids.phone.foreground_color = (1, 1, 1, 1)
 
-            personalize.ids.image.source="image/midnight.png"
+            personalize.ids.image.source=resource_path("image/midnight.png")
             personalize.ids.theme_text.color = (0.949, 0.914, 1.0, 1.0)
             personalize.ids.dark_label.color = (0.949, 0.914, 1.0, 1.0)
             personalize.ids.language_text.color = (0.949, 0.914, 1.0, 1.0)
@@ -1827,22 +2537,22 @@ class PersonalizeScreen(Screen):
             )
 
 
-            setting.ids.image.source="image/midnight.png"
+            setting.ids.image.source=resource_path("image/midnight.png")
 
 
 
         elif selected_theme=="dawn":
-            login.ids.image.source = "image/wisher-app-background_login.jpg"
+            login.ids.image.source = resource_path("image/wisher-app-background_login.jpg")
             login.ids.login_email.foreground_color = (0, 0, 0, 1)
             login.ids.login_password.foreground_color = (0, 0, 0, 1)
 
-            signup.ids.image.source = "image/wisher-app-background_login.jpg"
+            signup.ids.image.source = resource_path("image/wisher-app-background_login.jpg")
             signup.ids.signup_name.foreground_color = (0, 0, 0, 1)
             signup.ids.signup_email.foreground_color = (0, 0, 0, 1)
             signup.ids.signup_password.foreground_color = (0, 0, 0, 1)
             signup.ids.signup_phone.foreground_color = (0, 0, 0, 1)
 
-            addwish.ids.image.source = "image/wisher-app-background_login.jpg"
+            addwish.ids.image.source = resource_path("image/wisher-app-background_login.jpg")
             addwish.ids.wish_name.foreground_color = (0, 0, 0, 1)
             addwish.ids.wish_phone.foreground_color = (0, 0, 0, 1)
             addwish.ids.wish_email.foreground_color = (0, 0, 0, 1)
@@ -1854,7 +2564,7 @@ class PersonalizeScreen(Screen):
             addwish.ids.add_image.color = (0.7, 0.5, 0.9, 1)
 
 
-            home.ids.image.source = "image/wisher-app-background_login.jpg"
+            home.ids.image.source = resource_path("image/wisher-app-background_login.jpg")
             home.ids.total.color = (0, 0, 0, 1)
             home.ids.wish_number.color = (0, 0, 0, 1)
             home.ids.pending.color = (0, 0, 0, 1)
@@ -1866,19 +2576,19 @@ class PersonalizeScreen(Screen):
             home.side_panel_color = (0.176, 0.106, 0.306, 1.0)
             home.ids.add_image.color = (0.7, 0.5, 0.9, 1)
 
-            forgotpassword.ids.image.source = "image/wisher-app-background_login.jpg"
+            forgotpassword.ids.image.source = resource_path("image/wisher-app-background_login.jpg")
             forgotpassword.ids.fp_email.foreground_color = (0, 0, 0, 1)
             forgotpassword.ids.otp_input.foreground_color = (0, 0, 0, 1)
             forgotpassword.ids.new_password.foreground_color = (0, 0, 0, 1)
 
-            welcome.ids.image.source = "image/wisher-app-background_login.jpg"
+            welcome.ids.image.source = resource_path("image/wisher-app-background_login.jpg")
 
-            editprofile.ids.image.source = "image/wisher-app-background_login.jpg"
+            editprofile.ids.image.source = resource_path("image/wisher-app-background_login.jpg")
             editprofile.ids.full_name.foreground_color = (0, 0, 0, 1)
             editprofile.ids.email.foreground_color = (0, 0, 0, 1)
             editprofile.ids.phone.foreground_color = (0, 0, 0, 1)
 
-            personalize.ids.image.source = "image/wisher-app-background_login.jpg"
+            personalize.ids.image.source = resource_path("image/wisher-app-background_login.jpg")
             personalize.ids.theme_text.color = (0, 0, 0, 1)
             personalize.ids.dark_label.color = (0, 0, 0, 1)
             personalize.ids.language_text.color = (0, 0, 0, 1)
@@ -1925,7 +2635,7 @@ class PersonalizeScreen(Screen):
                 1,1,1,1
             )
 
-            setting.ids.image.source="image/wisher-app-background_login.jpg"
+            setting.ids.image.source=resource_path("image/wisher-app-background_login.jpg")
 
     def dark_mode(self):
         login = self.manager.get_screen("login")
@@ -1940,18 +2650,18 @@ class PersonalizeScreen(Screen):
         dark_mode = self.ids.dark_switch
 
         if dark_mode.active==True:
-            login.ids.image.source = "image/wisher-background-darkmode.jpg"
+            login.ids.image.source = resource_path("image/wisher-background-darkmode.jpg")
             login.ids.login_email.foreground_color = (1, 1, 1, 1)
             login.ids.login_password.foreground_color = (1, 1, 1, 1)
 
-            signup.ids.image.source = "image/wisher-background-darkmode.jpg"
+            signup.ids.image.source = resource_path("image/wisher-background-darkmode.jpg")
             signup.ids.signup_name.foreground_color = (1, 1, 1, 1)
             signup.ids.signup_email.foreground_color = (1, 1, 1, 1)
             signup.ids.signup_password.foreground_color = (1, 1, 1, 1)
             signup.ids.signup_name.foreground_color = (1, 1, 1, 1)
             signup.ids.signup_phone.foreground_color = (1, 1, 1, 1)
 
-            addwish.ids.image.source = "image/wisher-background-darkmode.jpg"
+            addwish.ids.image.source = resource_path("image/wisher-background-darkmode.jpg")
             addwish.ids.wish_name.foreground_color = (1, 1, 1, 1)
             addwish.ids.wish_phone.foreground_color = (1, 1, 1, 1)
             addwish.ids.wish_email.foreground_color = (1, 1, 1, 1)
@@ -1962,7 +2672,7 @@ class PersonalizeScreen(Screen):
             addwish.side_panel_color = (0.0588, 0.0627, 0.1411, 1.0)
             addwish.ids.add_image.color = (1, 1, 1, 1)
 
-            home.ids.image.source = "image/wisher-background-darkmode.jpg"
+            home.ids.image.source = resource_path("image/wisher-background-darkmode.jpg")
             home.ids.total.color = (1, 1, 1, 1)
             home.ids.wish_number.color = (1, 1, 1, 1)
             home.ids.pending.color = (1, 1, 1, 1)
@@ -1974,19 +2684,19 @@ class PersonalizeScreen(Screen):
             home.side_panel_color = (0.0588, 0.0627, 0.1411, 1.0)
             home.ids.add_image.color = (1, 1, 1, 1)
 
-            forgotpassword.ids.image.source = "image/wisher-background-darkmode.jpg"
+            forgotpassword.ids.image.source = resource_path("image/wisher-background-darkmode.jpg")
             forgotpassword.ids.fp_email.foreground_color = (1, 1, 1, 1)
             forgotpassword.ids.otp_input.foreground_color = (1, 1, 1, 1)
             forgotpassword.ids.new_password.foreground_color = (1, 1, 1, 1)
 
-            welcome.ids.image.source = "image/wisher-background-darkmode.jpg"
+            welcome.ids.image.source = resource_path("image/wisher-background-darkmode.jpg")
 
-            editprofile.ids.image.source = "image/wisher-background-darkmode.jpg"
+            editprofile.ids.image.source = resource_path("image/wisher-background-darkmode.jpg")
             editprofile.ids.full_name.foreground_color = (1, 1, 1, 1)
             editprofile.ids.email.foreground_color = (1, 1, 1, 1)
             editprofile.ids.phone.foreground_color = (1, 1, 1, 1)
 
-            personalize.ids.image.source = "image/wisher-background-darkmode.jpg"
+            personalize.ids.image.source = resource_path("image/wisher-background-darkmode.jpg")
             # personalize.ids.image.background_color= (0.0784, 0.0392, 0.1529, 1.0)
             personalize.ids.theme_text.color = (0.949, 0.914, 1.0, 1.0)
             personalize.ids.dark_label.color= (0.949, 0.914, 1.0, 1.0)
@@ -2034,7 +2744,7 @@ class PersonalizeScreen(Screen):
                 1,1,1,0.10
             )
 
-            setting.ids.image.source = "image/wisher-background-darkmode.jpg"
+            setting.ids.image.source = resource_path("image/wisher-background-darkmode.jpg")
         elif dark_mode.active==False:
             if self.selected_theme=="dawn":
                 self.background_theme("dawn")
@@ -2092,7 +2802,7 @@ class PersonalizeScreen(Screen):
             self.selected_theme = row[1]
             self.background_theme(str(self.selected_theme))
             self.ids.language_label.text = row[2]
-            self.ids.font_label.text = row[3]
+            self.ids.font_label.text = str(row[3])
 
             print("Theme:", self.selected_theme)
             print("Language:", row[2])
@@ -2289,9 +2999,8 @@ class NotificationContent(BoxLayout):
         ) VALUES(1,?,?,?)""",(notification_switch,sound_switch,reminder))
 
         conn18.commit()
-
-
         conn18.close()
+        show_popup(title="",message="Notification settings saved.")
 
 
     def load_ntf_settings(self):
@@ -2312,22 +3021,29 @@ class NotificationContent(BoxLayout):
 
 
 def play_notification_sound():
-    notification_sound=SoundLoader.load("audio/alert.wav")
+    notification_sound=SoundLoader.load(resource_path("audio/alert.wav"))
     if notification_sound:
         notification_sound.play()
+    else:
+        print("Failed to load notification sound.")
 
 def send_notification(title, message,enable_notification,sound):
-    app_icon="image/wisher-brand-logo.ico"
+    app_icon= resource_path("image/wisher-brand-logo.ico")
     if not enable_notification:
         return
 
-    notification.notify(
-        title=title,
-        message=message,
-        app_name="Wisher",
-        app_icon=app_icon,
-        timeout=10
-    )
+
+    try:
+        notification.notify(
+            title=str(title),
+            message=str(message),
+            app_name="Wisher",
+            app_icon=app_icon if os.path.exists(app_icon) else None,
+            timeout=10
+        )
+    except Exception as e:
+        print("Notification error:", repr(e))
+
 
     # Play Windows notification sound
     if sound:
@@ -2347,7 +3063,7 @@ class StorageContent(BoxLayout):
         if os.path.exists(self.cache_folder):
             shutil.rmtree(self.cache_folder)
 
-        print("Cache Cleared")
+        show_popup(title="",message="Cache Cleared")
 
     @staticmethod
     def clear_history():
@@ -2363,7 +3079,7 @@ class StorageContent(BoxLayout):
         conn10.commit()
         conn10.close()
 
-        print("History Cleared")
+        show_popup(title="",message="History Cleared")
 
     @staticmethod
     def delete_failed():
@@ -2379,7 +3095,7 @@ class StorageContent(BoxLayout):
         conn11.commit()
         conn11.close()
 
-        print("Failed Wishes Deleted")
+        show_popup(title="",message="Failed Wishes Deleted")
 
     @staticmethod
     def delete_all():
@@ -2392,7 +3108,7 @@ class StorageContent(BoxLayout):
         conn12.commit()
         conn12.close()
 
-        print("All Wishes Deleted")
+        show_popup(title="",message="All Wishes Deleted")
 
 class GeneralContent(BoxLayout):
 
@@ -2436,7 +3152,7 @@ class GeneralContent(BoxLayout):
         conn14.commit()
         conn14.close()
 
-        print("General settings saved.")
+        show_popup(title="",message="General settings saved.")
 
 
 
@@ -2470,7 +3186,7 @@ class GeneralContent(BoxLayout):
         else:
             disable_startup()
 
-APP_NAME = "Wisher App"
+APP_NAME = "Wisher"
 
 def enable_startup():
     key = winreg.OpenKey(
@@ -2604,9 +3320,6 @@ class WindowManager(ScreenManager):
             **kwargs
         )
 
-
-
-
 def close_whatsapp(wish):
     time.sleep(10)
     plat_form=wish[8]
@@ -2626,7 +3339,7 @@ def save_credentials(user_email):
     cursor5 = conn5.cursor()
     try:
         flow = InstalledAppFlow.from_client_secrets_file(
-            "client_secret.json",
+            resource_path("client_secret.json"),
             scopes
         )
         creds = flow.run_local_server(port=0,open_browser=True,timeout_seconds=120)
@@ -2848,12 +3561,9 @@ def check_wishes():
         time_str = wish[8]
         plat_form=wish[9].split(",")
 
-
-
         try:
             # Combine date + time
             wish_time = datetime.strptime(f"{date} {time_str}", "%Y-%m-%d %H:%M:%S %p")
-
 
         except ValueError:
             print(f"Invalid date/time format {date} {time_str}")
@@ -2912,8 +3622,6 @@ def check_notifications():
 
     conn21 = sqlite3.connect("user.db")
     cursor21 = conn21.cursor()
-
-
 
     # Read notification settings once
     cursor21.execute("""
@@ -3028,8 +3736,93 @@ class WisherApp(MDApp):
         self.tray_icon = self.icon
         self.language = language_manager
 
+    def check_internet_connection(self):
+
+        wifi_name = None
+        ethernet_connected = False
+
+        # Check Wi-Fi connection
+        try:
+            result = subprocess.check_output(
+                ["netsh", "wlan", "show", "interfaces"],
+                encoding="utf-8",
+                errors="ignore"
+            )
+
+            for line in result.splitlines():
+                line = line.strip()
+
+                if line.startswith("SSID") and "BSSID" not in line:
+                    wifi_name = line.split(":", 1)[1].strip()
+                    break
+
+        except Exception as e:
+            print("Wi-Fi detection error:", e)
+
+        # Check Ethernet connection
+        try:
+            result = subprocess.check_output(
+                ["powershell", "-Command",
+                 "Get-NetAdapter | "
+                 "Where-Object {$_.Status -eq 'Up'} | "
+                 "Select-Object -ExpandProperty Name"],
+                encoding="utf-8",
+                errors="ignore"
+            )
+
+            adapters = [
+                line.strip()
+                for line in result.splitlines()
+                if line.strip()
+            ]
+
+            for adapter in adapters:
+                adapter_lower = adapter.lower()
+
+                if (
+                    "ethernet" in adapter_lower
+                    or "lan" in adapter_lower
+                ):
+                    ethernet_connected = True
+                    print("Ethernet adapter:", adapter)
+                    break
+
+        except Exception as e:
+            print("Ethernet detection error:", e)
+
+
+        if not wifi_name and not ethernet_connected:
+            return False, None, False
+
+        # Check Internet
+        try:
+            response = requests.get(
+                "https://www.google.com/generate_204",
+                timeout=5
+            )
+
+            if response.status_code in (200, 204):
+                if wifi_name:
+                    print("Internet connection is active via Wi-Fi:", wifi_name)
+                if ethernet_connected:
+                    print("Internet connection is active via Ethernet.")
+
+        except requests.RequestException as e:
+            print("Internet connection error:", e)
+
+        return True, wifi_name , ethernet_connected
+
+    # def internet_background_thread(self):
+
+
     def build(self):
-        root=Builder.load_file("main.kv")
+        Base_dir = Path(__file__).resolve().parent
+
+        kv_path=Base_dir / "main.kv"
+        if not kv_path.is_file():
+            raise FileNotFoundError(f"KV file not found: {kv_path}")
+
+        root=Builder.load_file(str(kv_path))
         Window.bind(on_request_close=self.on_request_close)
         self.language=language_manager
         self.language.bind(current_language=self.on_language_changed)
@@ -3126,7 +3919,7 @@ class WisherApp(MDApp):
 
     def create_tray_icon(self):
 
-        image = Image.open("image/wisher-brand-logo.png")  # Use your app icon
+        image = Image.open(resource_path("image/wisher-brand-logo.png"))  # Use your app icon
 
         menu = pystray.Menu(
             Item("Open", self.restore_window,default=True),
@@ -3155,6 +3948,8 @@ class WisherApp(MDApp):
 
         row = cursor16.fetchone()
         if row is None:
+            cursor16.execute("INSERT INTO general_settings (id, auto_scheduler) VALUES (1, 1)")
+            conn16.commit()
             return
 
         if row[0]==1:
@@ -3171,9 +3966,7 @@ class WisherApp(MDApp):
 
             conn16.close()
 
-        self.root.current="flash"
-
-
+        
 
     def on_language_changed(self,*args):
         if not self.root:
@@ -3181,6 +3974,7 @@ class WisherApp(MDApp):
         for screen in self.root.screens:
             if hasattr(screen,"refresh_language"):
                 screen.refresh_language()
+
 if __name__ == '__main__':
     WisherApp().run()
 
